@@ -16,7 +16,7 @@ VariableNotDeclared >> classSymbol [
 ]
 
 { #category : #accessing }
-VariableNotDeclared >> smartDescription [
+VariableNotDeclared >> defaultDescription [
 	
 	message ifNil: [^self description].
 

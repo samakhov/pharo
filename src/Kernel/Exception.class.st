@@ -126,6 +126,11 @@ Exception >> defaultAction [
 	self raiseUnhandledError
 ]
 
+{ #category : #accessing }
+Exception >> defaultDescription [
+	^self description
+]
+
 { #category : #private }
 Exception >> defaultResumeValue [
 	"Answer the value that by default should be returned if the exception is resumed"
@@ -369,11 +374,6 @@ Exception >> signalerContext [
 	^ signalContext findContextSuchThat: [ :context |
 		(context receiver == self 
 		or: [ context receiver == self class ]) not ]
-]
-
-{ #category : #accessing }
-Exception >> smartDescription [
-	^self description
 ]
 
 { #category : #accessing }
