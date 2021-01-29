@@ -72,7 +72,13 @@ CoASTResultSetBuilder >> parseNode [
 			source: completionContext source;
 			noPattern: completionContext isWorkspace; 
 			options: #(+ optionParseErrors + optionSkipSemanticWarnings);
-			parse) doSemanticAnalysis nodeForOffset: completionContext position ] 
+			parse) nodeForOffset: completionContext position ] 
+]
+
+{ #category : #visiting }
+CoASTResultSetBuilder >> visitArgumentVariableNode: anArgumentNode [
+
+	^ self visitVariableNode: anArgumentNode
 ]
 
 { #category : #visiting }
@@ -100,13 +106,24 @@ CoASTResultSetBuilder >> visitCascadeNode: aRBCascadeNode [
 ]
 
 { #category : #visiting }
+CoASTResultSetBuilder >> visitClassVariableNode: aRBVariableNode [
+
+	^ self visitVariableNode: aRBVariableNode
+]
+
+{ #category : #visiting }
 CoASTResultSetBuilder >> visitEnglobingErrorNode: aRBVariableNode [ 
 	^ self visitNode: aRBVariableNode
 ]
 
 { #category : #visiting }
-CoASTResultSetBuilder >> visitGlobalNode: aRBVariableNode [
+CoASTResultSetBuilder >> visitGlobalVariableNode: aRBVariableNode [
 
+	^ self visitVariableNode: aRBVariableNode
+]
+
+{ #category : #visiting }
+CoASTResultSetBuilder >> visitInstanceVariableNode: aRBVariableNode [ 
 	^ self visitVariableNode: aRBVariableNode
 ]
 
@@ -120,6 +137,11 @@ CoASTResultSetBuilder >> visitLiteralArrayNode: aRBLiteralArrayNode [
 CoASTResultSetBuilder >> visitLiteralValueNode: aRBLiteralValueNode [ 
 	
 	^ self visitNode: aRBLiteralValueNode
+]
+
+{ #category : #visiting }
+CoASTResultSetBuilder >> visitLiteralVariableNode: aRBVariableNode [
+	^ self visitVariableNode: aRBVariableNode
 ]
 
 { #category : #visiting }
@@ -177,9 +199,9 @@ CoASTResultSetBuilder >> visitSuperNode: aRBSuperNode [
 ]
 
 { #category : #visiting }
-CoASTResultSetBuilder >> visitTemporaryNode: aRBReturnNode [ 
-	
-	^ self visitNode: aRBReturnNode
+CoASTResultSetBuilder >> visitTemporaryVariableNode: anArgumentNode [
+
+	^ self visitVariableNode: anArgumentNode
 ]
 
 { #category : #visiting }

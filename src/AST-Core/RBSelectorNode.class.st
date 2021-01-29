@@ -11,20 +11,24 @@ Class {
 	#superclass : #RBValueNode,
 	#instVars : [
 		'value',
-		'start'
+		'keywordPositions'
 	],
 	#category : #'AST-Core-Nodes'
 }
 
 { #category : #accessing }
 RBSelectorNode class >> value: aString [
-	^ self value: aString start: #(0)
+
+	^ self value: aString keywordPositions: #(0)
 ]
 
 { #category : #accessing }
-RBSelectorNode class >> value: aString start: anInteger [
-	^ self new value: aString ;
-	           start: anInteger.
+RBSelectorNode class >> value: aString keywordPositions: keywordPositions [
+
+	^ self new
+		value: aString;
+	 	keywordPositions: keywordPositions;
+		yourself
 ]
 
 { #category : #comparing }
@@ -33,7 +37,7 @@ RBSelectorNode >> = anObject [
 	^ self class = anObject class ifTrue: [ self value = anObject value ] ifFalse: [ false ]
 ]
 
-{ #category : #comparing }
+{ #category : #visiting }
 RBSelectorNode >> acceptVisitor: aProgramNodeVisitor [
 	^ aProgramNodeVisitor visitSelectorNode: self
 ]
@@ -43,22 +47,40 @@ RBSelectorNode >> hash [
 	^ self value hash
 ]
 
-{ #category : #comparing }
+{ #category : #testing }
 RBSelectorNode >> isSelector [
 	^true
 ]
 
-{ #category : #comparing }
+{ #category : #accessing }
+RBSelectorNode >> keywordPositions [
+
+	^ keywordPositions
+]
+
+{ #category : #accessing }
+RBSelectorNode >> keywordPositions: positions [
+
+	keywordPositions := positions
+]
+
+{ #category : #accessing }
+RBSelectorNode >> keywords [
+
+	^ value keywords
+]
+
+{ #category : #testing }
 RBSelectorNode >> needsParenthesis [
 	^false
 ]
 
-{ #category : #'as yet unclassified' }
+{ #category : #accessing }
 RBSelectorNode >> numArgs [ 
-	^value numArgs.
+	^ value numArgs
 ]
 
-{ #category : #'as yet unclassified' }
+{ #category : #printing }
 RBSelectorNode >> printOn: aStream [
 
 	aStream
@@ -68,36 +90,23 @@ RBSelectorNode >> printOn: aStream [
 		<< ')'
 ]
 
-{ #category : #comparing }
-RBSelectorNode >> start: aPositionsList [
-	start := aPositionsList ifNotNil: [:list| list asIntegerArray ].
-]
-
-{ #category : #comparing }
+{ #category : #accessing }
 RBSelectorNode >> startWithoutParentheses [
-	^ start
+	^ keywordPositions first
 ]
 
-{ #category : #comparing }
+{ #category : #accessing }
 RBSelectorNode >> stopWithoutParentheses [
-	| temp prev |
-	temp := 0.
-	^ (start collect: [ :each | prev := temp. 
-							 temp := value 
-								findString: ':' 
-								startingAt: prev+1. 
-							 temp=0 
-								ifFalse: [each + temp - prev -1 ] 
-								ifTrue: [each + value size - 1]]) asIntegerArray.
 	
+	^ self keywordPositions last + self keywords last size
 ]
 
-{ #category : #comparing }
+{ #category : #accessing }
 RBSelectorNode >> value [
 	^value
 ]
 
-{ #category : #comparing }
+{ #category : #accessing }
 RBSelectorNode >> value: aString [
 	value := aString asSymbol
 ]

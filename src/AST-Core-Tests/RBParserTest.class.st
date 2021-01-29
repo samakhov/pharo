@@ -283,7 +283,7 @@ RBParserTest >> testCascadeWithInvalidSelectorRaisesError [
 	self assert: tree messages second selectorNode equals: (RBSelectorNode value: #repared).
 	
 	self assert: tree messages third isFaulty.
-	self assert: tree messages third errorMessage equals: 'Message expected'.
+	self assert: tree messages third errorMessage equals: 'Cascade message expected'.
 	
 	self assert: tree messages last isMessage.
 	self assert: tree messages last receiver name equals: #faulty.
@@ -307,7 +307,7 @@ RBParserTest >> testCascadeWithMissingSelectorRaisesError [
 	self assert: tree messages second selectorNode equals: (RBSelectorNode value: #repared).
 	
 	self assert: tree messages third isFaulty.
-	self assert: tree messages third errorMessage equals: 'Message expected'.
+	self assert: tree messages third errorMessage equals: 'Cascade message expected'.
 	
 	self assert: tree messages last isMessage.
 	self assert: tree messages last receiver name equals: #faulty.
@@ -994,11 +994,9 @@ RBParserTest >> testMessageWithFaultySelectorIsFaulty [
 { #category : #testIntervals }
 RBParserTest >> testMethodNodeEndAtTheEndOfTheString [
 	| tree |
-	"Expressions have an odd way of handling their stop position. The string is reformated to give a new source corresponding to the method #noMethod.
-	 It seems the method node take this new source into account instead of the original one."
 	tree := (self parserClass parseExpression: 'foo kung foo. 1+2+3. #''alabama''.  ').
 	self assert: tree parent source equals: 'foo kung foo. 1+2+3. #''alabama''.  '.
-	self assert: tree parent stop equals: tree parent newSource size.
+	self assert: tree parent stop equals: tree parent sourceCode size.
 	
 	tree := (self parserClass parseMethod: 'foo kung foo. 1+2+3. #''alabama''.  ').
 	self assert: tree source equals: 'foo kung foo. 1+2+3. #''alabama''.  '.
@@ -1775,6 +1773,23 @@ RBParserTest >> testReplacingNodes [
 	self assert: tree removeDeadCode equals: (self parserClass parseMethod: '+ q | q b | self ifTrue: [] ifFalse: [b := c]. q := b. {q. b}. ^q')
 ]
 
+{ #category : #tests }
+RBParserTest >> testScopesEnclosingMatchingLiterals [
+	| tree |
+
+	tree := self parserClass parseMethod: 'tmp [ $] ]'.
+	self assert: tree statements first isBlock.
+
+	tree := self parserClass parseMethod: 'tmp ($))'.
+	self assert: tree statements first isLiteralNode.
+	
+	tree := self parserClass parseMethod: 'tmp #( $) )'.
+	self assert: tree statements first isLiteralArray.
+	
+	tree := self parserClass parseMethod: 'tmp { $} }'.
+	self assert: tree statements first isDynamicArray.
+]
+
 { #category : #testSelector }
 RBParserTest >> testSelectorFromMessageIsSelectorNode [
 	| tree |
@@ -1906,7 +1921,7 @@ RBParserTest >> testUnclosedArrayErrorNodeContainsRightValue [
 	| tree |
 	tree := self parseFaultyExpression: '{ faulty parentheses message node'.
 	self assert: tree isParseError.
-	self assert: tree value equals: '{ faulty parentheses message node '
+	self assert: tree formattedCode equals: '{ faulty parentheses message node'
 ]
 
 { #category : #'error testing' }
@@ -1914,7 +1929,7 @@ RBParserTest >> testUnclosedBracketErrorNodeContainsRightValue [
 	| tree |
 	tree := self parseFaultyExpression: '[ faulty parentheses message node'.
 	self assert: tree isEnglobingError.
-	self assert: tree value equals: '[ faulty parentheses message node '
+	self assert: tree formattedCode equals: '[ faulty parentheses message node'
 ]
 
 { #category : #'error testing' }
@@ -1922,7 +1937,7 @@ RBParserTest >> testUnclosedParenthesesErrorNodeContainsRightValue [
 	| tree |
 	tree := self parseFaultyExpression: '( faulty parentheses message node'.
 	self assert: tree isEnglobingError.
-	self assert: tree value equals: '( faulty parentheses message node '
+	self assert: tree formattedCode equals: '( faulty parentheses message node'
 ]
 
 { #category : #'garbage tests' }
@@ -1936,7 +1951,28 @@ RBParserTest >> testUnclosedTemporariesErrorNodeContainsRightValue [
 	| tree |
 	tree := self parseFaultyExpression: '| faulty temporaries'.
 	self assert: tree isEnglobingError.
-	self assert: tree value equals: '| faulty temporaries '
+	self assert: tree formattedCode equals: '| faulty temporaries'
+]
+
+{ #category : #'error testing' }
+RBParserTest >> testUnfinishedStatementWithLeadingBracesRaisesError [
+
+	self should: [(self parserClass parseExpression: '[]}')] 
+		  raise: SyntaxErrorNotification
+]
+
+{ #category : #'error testing' }
+RBParserTest >> testUnfinishedStatementWithLeadingBracketRaisesError [
+
+	self should: [(self parserClass parseExpression: '[]]')] 
+		  raise: SyntaxErrorNotification.
+]
+
+{ #category : #'error testing' }
+RBParserTest >> testUnfinishedStatementWithLeadingParenthesisRaisesError [
+
+	self should: [(self parserClass parseExpression: '[])')] 
+		  raise: SyntaxErrorNotification.
 ]
 
 { #category : #private }

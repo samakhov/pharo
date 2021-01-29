@@ -10,7 +10,7 @@ Class {
 { #category : #coverage }
 PointTest >> classToBeTested [
 	
-	^Point
+	^ Point
 ]
 
 { #category : #'tests - arithmetic' }
@@ -286,7 +286,6 @@ PointTest >> testIsPoint [
 	self deny: 1 isPoint. 
 	self deny: -1 isPoint. 
 	'Test on a random class'.
-	self deny: KernelClassesFilter new isPoint.
 	self deny: Object new isPoint.
 	self assert: Point new isPoint.
 	self assert: (0 @ 0) isPoint.

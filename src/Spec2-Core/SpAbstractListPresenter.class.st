@@ -17,6 +17,18 @@ Class {
 	#category : #'Spec2-Core-Widgets-Table'
 }
 
+{ #category : #documentation }
+SpAbstractListPresenter class >> documentSections [
+		
+	^ OrderedDictionary newFromPairs: {
+		'Examples'. self class methods select: [ :each | each protocol = self documentExamplesProtocol ].
+		'API Methods'. self methods select: [ :each | each protocol = #'api' ].
+		'API Selection Methods'. self methods select: [ :each | each protocol = #'api-selection' ].
+		'Testing Methods'. self methods select: [ :each | each protocol = #'testing' ].
+		'Events'. self methods select: [ :each | each protocol = #'api-events' ].
+	 }
+]
+
 { #category : #api }
 SpAbstractListPresenter >> activateOnDoubleClick [
 	"Configure the list to trigger activation on double click.
@@ -82,6 +94,16 @@ SpAbstractListPresenter >> clickItem: anInteger [
 	self selectIndex: anInteger
 ]
 
+{ #category : #private }
+SpAbstractListPresenter >> disableActivationDuring: aBlock [
+	| oldActivate |
+	
+	oldActivate := activationBlock.
+	activationBlock := [ ].
+	aBlock ensure: [ 
+		activationBlock := oldActivate ]
+]
+
 { #category : #TOREMOVE }
 SpAbstractListPresenter >> disableFilter [
 	self itemFilter: nil
@@ -104,16 +126,6 @@ SpAbstractListPresenter >> doubleClickAtIndex: anIndex [
 	
 	activateOnSingleClick ifTrue: [ ^ self ].
 	self doActivateAtIndex: anIndex
-]
-
-{ #category : #TOREMOVE }
-SpAbstractListPresenter >> enableItemBeginsWithFilter [
-	self itemFilter: [ :each :pattern | each asLowercase beginsWith: pattern asLowercase ]
-]
-
-{ #category : #TOREMOVE }
-SpAbstractListPresenter >> enableItemSubstringFilter [
-	self itemFilter: [ :each :pattern | each asLowercase includesSubstring: pattern asLowercase ]
 ]
 
 { #category : #initialization }
@@ -201,6 +213,16 @@ SpAbstractListPresenter >> listSize [
 	^ self model size
 ]
 
+{ #category : #TOREMOVE }
+SpAbstractListPresenter >> matchBeginOfString [
+	self itemFilter: [ :each :pattern | each asLowercase beginsWith: pattern asLowercase ]
+]
+
+{ #category : #TOREMOVE }
+SpAbstractListPresenter >> matchSubstring [
+	self itemFilter: [ :each :pattern | each asLowercase includesSubstring: pattern asLowercase ]
+]
+
 { #category : #api }
 SpAbstractListPresenter >> model [
 	"Answer the model for this list. 
@@ -225,6 +247,15 @@ SpAbstractListPresenter >> newEmptyModel [
 	^ SpCollectionListModel on: #()
 ]
 
+{ #category : #api }
+SpAbstractListPresenter >> refresh [
+	"Forces a refresh of the list. 
+	 This is useful when some model contents has changed, but we do not want to reset the whole list 
+	 (and losing selections with it)"
+
+	self withAdapterDo: [ :anAdapter | anAdapter refreshList ]
+]
+
 { #category : #initialization }
 SpAbstractListPresenter >> registerEvents [
 
@@ -240,6 +271,14 @@ SpAbstractListPresenter >> selectAll [
 	 It does not triggers activation event."
 	
 	self selection selectAll
+]
+
+{ #category : #'api-selection' }
+SpAbstractListPresenter >> selectFirst [
+	"Select first element in list. 
+	 Useful to avoid selecting by index."
+	
+	^ self selectIndex: 1
 ]
 
 { #category : #'api-selection' }
@@ -387,8 +426,21 @@ SpAbstractListPresenter >> unselectItem: anObject [
 	self selection unselectItem: anObject
 ]
 
+{ #category : #api }
+SpAbstractListPresenter >> updateItemsKeepingSelection: aCollection [
+	"Update list items keeping current selection. 
+	 WARNING: aCollection must includes the elements selected."
+	
+	self disableActivationDuring: [ 
+		| items |
+		items := self selection selectedItems.
+		self items: aCollection.
+		self selectItems: items ]
+]
+
 { #category : #accessing }
 SpAbstractListPresenter >> verticalAlignment [
+
 	^ verticalAlignment
 ]
 

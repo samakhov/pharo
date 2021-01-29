@@ -26,9 +26,6 @@ Class {
 		'configuredServices',
 		'sourceTextModel'
 	],
-	#classVars : [
-		'FileReaderRegistry'
-	],
 	#classInstVars : [
 		'searchList'
 	],
@@ -78,7 +75,7 @@ FileList class >> contentMenu: aBuilder [
 		keyText: 'v';
 		selector: #paste;
 		iconName: #smallPasteIcon.
-	(aBuilder item: #'Paste...' translated)
+	(aBuilder item: #'Paste Recent' translated)
 		selector: #pasteRecent;
 		iconName: #smallPasteIcon;
 		withSeparatorAfter .
@@ -585,7 +582,7 @@ FileList >> fileContentsMenu: aMenu shifted: shifted [
 			[services add: self serviceGetHex].
 		(#(needToGetShiftJIS needToGetEUCJP needToGetCNGB needToGetEUCKR needToGetUTF8) includes: brevityState) ifFalse:
 			[services add: self serviceGetEncodedText].
-		(FileStream sourceFileSuffixes includes: self suffixOfSelectedFile) ifTrue:
+		(#('st' 'cs') includes: self suffixOfSelectedFile) ifTrue:
 			[services addAll: (self itemsForFile: reference)].
 
 		aMenu 
@@ -593,7 +590,7 @@ FileList >> fileContentsMenu: aMenu shifted: shifted [
 			for: self reference
 			extraLines: #()].
 
-	aMenu addAllFromPragma: 'fileListContentMenu' target: self.
+	aMenu addAllFromPragma: #fileListContentMenu target: self.
 
 	^ aMenu
 
@@ -904,8 +901,7 @@ FileList >> morphicDirectoryTreePaneFiltered: aSymbol [
 		list: aSymbol
 		selected: #selectedDirectory
 		changeSelected: #selectedDirectory:
-		menu: #volumeMenu:
-		keystroke: nil)
+		menu: #volumeMenu:)
 			autoDeselect: false;
 			enableDrag: false;
 			enableDrop: true;
@@ -1229,7 +1225,7 @@ FileList >> readContentsHex: brevity [
 { #category : #'file list' }
 FileList >> readOnlyStream [
 	"Answer a read-only stream on the selected file. For the various stream-reading services."
-	^ FileStream readOnlyFileNamed: self reference fullName
+	^ self reference readStream
 ]
 
 { #category : #accessing }

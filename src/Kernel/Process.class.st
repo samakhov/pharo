@@ -152,7 +152,7 @@ Process >> calleeOf: aContext [
 
 { #category : #'changing suspended state' }
 Process >> complete: aContext [
-	"Run self until aContext is popped or an unhandled error is raised.  Return self's new top context, unless an unhandled error was raised then return the signaler context (rather than open a debugger)."
+	"Run self until aContext is popped or an unhandled error is raised.  Return self's new top context, unless an unhandled error was raised then return the signal context (rather than open a debugger)."
 
 	| ctxt pair |
 	ctxt := suspendedContext.
@@ -265,11 +265,6 @@ Process >> effectiveProcess [
 	 debugged process as the effectiveProcess of the process executing the code, preserving process
 	 identity."
 	^effectiveProcess ifNil: [self] 
-]
-
-{ #category : #private }
-Process >> environmentKeyNotFound [ 
-	self error: 'Environment key not found'
 ]
 
 { #category : #private }
@@ -652,11 +647,20 @@ Process >> stepToHome: aContext [
 				onBehalfOf: self.
 	suspendedContext := pair first.
 	error := pair second.
-	"error class = Halt ifTrue: [ 
-		aContext methodNode 
-			pragmaNamed: #debuggerCompleteToSender 
-			ifPresent: [ ^ self completeTo: aContext sender ] ]."
-	error ifNotNil: [^ suspendedContext := error signalerContext].
+
+	error ifNotNil: [
+		suspendedContext := error signalerContext.
+		"As we are activating a context that has been interrupted in the signal of the exception,
+		we need to push a receiver of the signal message.
+		A suspended context should always be a top context.
+		A top context has the return value of the message in the stack.
+		As this context has been suspended while sending a message the return value should be pushed. 
+		This is maybe not the expected return value (the #signal message returns the value with the 
+		one the exception is resumed).
+		But this allows the debugger to continue executing and does not crash the interpreter nor 
+		the VM
+		"
+		suspendedContext push: nil].
 	^ suspendedContext
 ]
 

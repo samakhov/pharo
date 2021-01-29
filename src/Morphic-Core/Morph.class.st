@@ -1107,6 +1107,31 @@ Morph >> asDraggableMorph [
 	^self
 ]
 
+{ #category : #converting }
+Morph >> asForm [
+	
+	^ self asFormOfSize: self extent
+]
+
+{ #category : #converting }
+Morph >> asFormOfSize: extent [
+	"Answer a new thumbnail for the receiver."
+	| form transform rect |
+
+	rect := self bounds scaledAndCenteredIn: (0@0 extent: extent).
+	form := Form extent: rect extent depth: Display depth.
+	transform := MatrixTransform2x3 withScale: form extent / self extent.
+	form getCanvas
+		transformBy: transform
+		clippingTo: form boundingBox
+		during: [ :canvas | 
+			canvas 
+				translateBy: self topLeft negated 
+				during: [ :translatedCanvas | self fullDrawOn: translatedCanvas ] ]
+		smoothing: 2.
+	^ form
+]
+
 { #category : #creation }
 Morph >> asMorph [
 	^ self
@@ -1121,8 +1146,7 @@ Morph >> asReadOnlyMorph [
 { #category : #'accessing - extension' }
 Morph >> assureExtension [
 	"creates an extension for the receiver if needed"
-	extension ifNil: [self initializeExtension].
-	^ extension
+	^ extension ifNil: [extension := MorphExtension new]
 ]
 
 { #category : #'halos and balloon help' }
@@ -1187,9 +1211,8 @@ Morph >> balloonText [
 	construct the text, for economy's sake, such as model phrases in 
 	a Viewer"
 
-	extension ifNil: [^nil].
-	^extension balloonText ifNotNil: [:text | 
-				text asString withNoLineLongerThan: self theme settings maxBalloonHelpLineLength]
+	^ extension ifNotNil: [:ext | ext balloonText ifNotNil: [:text | 
+				text asString withNoLineLongerThan: self theme settings maxBalloonHelpLineLength]]
 ]
 
 { #category : #theme }
@@ -1272,8 +1295,9 @@ Morph >> borderColor [
 { #category : #accessing }
 Morph >> borderStyle [
 
-	extension ifNil: [^BorderStyle default trackColorFrom: self].
-	^(extension borderStyle ifNil: [BorderStyle default]) trackColorFrom: self
+	^ extension 
+		ifNil: [BorderStyle default trackColorFrom: self]
+		ifNotNil: [:ext | (ext borderStyle ifNil: [BorderStyle default]) trackColorFrom: self]
 ]
 
 { #category : #accessing }
@@ -1545,9 +1569,7 @@ Morph >> canDrawBorder: aBorderStyle [
 { #category : #'layout-properties' }
 Morph >> cellInset [
 	"Layout specific. This property specifies an extra inset for each cell in the layout."
-	| props |
-	props := self layoutProperties.
-	^props ifNil:[0] ifNotNil:[props cellInset].
+	^ self layoutProperties ifNil:[0] ifNotNil: [:props | props cellInset]
 ]
 
 { #category : #'layout-properties' }
@@ -2865,6 +2887,11 @@ Morph >> handleKeyDown: anEvent [
 	"System level event handling."
 	
 	anEvent wasHandled ifTrue:[ ^ self ].
+	
+	self shortcutsHandler ifNotNil: [:handler | 
+		handler handleKeystroke: anEvent inMorph: self.
+		anEvent wasHandled ifTrue: [^ self]].
+	
 	(self handlesKeyDown: anEvent) ifFalse:[ ^ self ].
 	anEvent wasHandled: true.
 	self keyDown: anEvent.
@@ -2888,10 +2915,6 @@ Morph >> handleKeystroke: anEvent [
 	
 	anEvent wasHandled
 		ifTrue: [^ self].
-	
-	self shortcutsHandler ifNotNil: [:handler | 
-		handler handleKeystroke: anEvent inMorph: self.
-		anEvent wasHandled ifTrue: [^ self]].
 	
 	(self handlesKeyStroke: anEvent)
 		ifFalse: [^ self].
@@ -2946,10 +2969,11 @@ Morph >> handleMouseEnter: anEvent [
 			^ self eventHandler ifNotNil: [ :handler | handler mouseEnterDragging: anEvent fromMorph: self ] ].
 	self wantsBalloon ifTrue: [ anEvent hand triggerBalloonFor: self after: self balloonHelpDelayTime ].
 
-	^ (self handlesMouseOver: anEvent)
+	(self handlesMouseOver: anEvent)
 		ifTrue: [ anEvent wasHandled: true.
-			self mouseEnter: anEvent ]
-		ifFalse: [ self eventHandler ifNotNil: [ :handler | handler mouseEnter: anEvent fromMorph: self ] ]
+			self mouseEnter: anEvent ].
+	
+	self eventHandler ifNotNil: [ :handler | ^ handler mouseEnter: anEvent fromMorph: self ]
 ]
 
 { #category : #'events-processing' }
@@ -3251,10 +3275,12 @@ Morph >> hasDragAndDropEnabledString [
 
 { #category : #'drop shadows' }
 Morph >> hasDropShadow [
+
 	"answer whether the receiver has DropShadow"
-	^ self
-		valueOfProperty: #hasDropShadow
-		ifAbsent: [false]
+
+	^ extension
+		  ifNil: [ false ]
+		  ifNotNil: [ :ext | ext valueOfProperty: #hasDropShadow ifAbsent: false ]
 ]
 
 { #category : #'drop shadows' }
@@ -3316,10 +3342,13 @@ Morph >> hasParagraphAnchorString [
 ]
 
 { #category : #'accessing - properties' }
-Morph >> hasProperty: aSymbol [ 
+Morph >> hasProperty: aSymbol [
+
 	"Answer whether the receiver has the property named aSymbol"
-	extension ifNil: [^ false].
-	^extension hasProperty: aSymbol
+
+	^ extension
+		  ifNil: [ false ]
+		  ifNotNil: [ :ext | ext hasProperty: aSymbol ]
 ]
 
 { #category : #'layout-menu' }
@@ -3771,6 +3800,7 @@ Morph >> keepsTransform [
 { #category : #'event handling' }
 Morph >> keyDown: anEvent [
 	"Handle a key down event. The default response is to do nothing."
+	^ false
 ]
 
 { #category : #'event handling' }
@@ -3782,6 +3812,7 @@ Morph >> keyStroke: anEvent [
 { #category : #'event handling' }
 Morph >> keyUp: anEvent [
 	"Handle a key up event. The default response is to do nothing."
+	^ false
 ]
 
 { #category : #'event handling' }
@@ -4311,11 +4342,7 @@ Morph >> morphsInFrontOverlapping: aRectangle do: aBlock [
 
 { #category : #'event handling' }
 Morph >> mouseDown: evt [ 
-	"Handle a mouse down event. The default response is to let my 
-	eventHandler, if any, handle it."
-	self eventHandler
-		ifNotNil: [self eventHandler mouseDown: evt fromMorph: self]
-
+	"Handle a mouse down event. It can be handled here or in the event handler"
 ]
 
 { #category : #'halos and balloon help' }
@@ -4340,11 +4367,7 @@ Morph >> mouseDownPriority [
 
 { #category : #'event handling' }
 Morph >> mouseEnter: evt [
-	"Handle a mouseEnter event, meaning the mouse just entered my bounds with no button pressed. The default response is to let my eventHandler, if any, handle it."
-
-	^ self eventHandler ifNotNil:
-		[self eventHandler mouseEnter: evt fromMorph: self].
-
+	"Handle a mouseEnter event, meaning the mouse just entered my bounds with no button pressed"
 ]
 
 { #category : #'event handling' }
@@ -4358,35 +4381,23 @@ Morph >> mouseEnterDragging: evt [
 
 { #category : #'event handling' }
 Morph >> mouseLeave: evt [
-	"Handle a mouseLeave event, meaning the mouse just left my bounds with no button pressed. The default response is to let my eventHandler, if any, handle it."
-
-	^ self eventHandler ifNotNil:
-		[self eventHandler mouseLeave: evt fromMorph: self].
-
+	"Handle a mouseLeave event, meaning the mouse just left my bounds with no button pressed."
 ]
 
 { #category : #'event handling' }
 Morph >> mouseLeaveDragging: evt [
-	"Handle a mouseLeaveLaden event, meaning the mouse just left my bounds with a button pressed or laden with submorphs. The default response is to let my eventHandler, if any, handle it; else to do nothing."
-
-	self eventHandler ifNotNil:
-		[self eventHandler mouseLeaveDragging: evt fromMorph: self]
+	"Handle a mouseLeaveLaden event, meaning the mouse just left my bounds with a button pressed or laden with submorphs."
 ]
 
 { #category : #'event handling' }
 Morph >> mouseMove: evt [
 	"Handle a mouse move event. The default response is to let my eventHandler, if any, handle it."
-	self eventHandler ifNotNil:
-		[self eventHandler mouseMove: evt fromMorph: self].
 
 ]
 
 { #category : #'event handling' }
 Morph >> mouseStillDown: evt [
 	"Handle a mouse move event. The default response is to let my eventHandler, if any, handle it."
-
-	self eventHandler ifNotNil:
-		[self eventHandler mouseStillDown: evt fromMorph: self].
 
 ]
 
@@ -4405,9 +4416,6 @@ Morph >> mouseStillDownThreshold [
 { #category : #'event handling' }
 Morph >> mouseUp: evt [
 	"Handle a mouse up event. The default response is to let my eventHandler, if any, handle it."
-
-	^ self eventHandler ifNotNil:
-		[self eventHandler mouseUp: evt fromMorph: self].
 
 ]
 
@@ -6634,9 +6642,11 @@ Morph >> vResizingString: aSymbol [
 ]
 
 { #category : #'accessing - properties' }
-Morph >> valueOfProperty: aSymbol [ 
+Morph >> valueOfProperty: aSymbol [
+
 	"answer the value of the receiver's property named aSymbol"
-	^ extension ifNotNil: [extension valueOfProperty: aSymbol]
+
+	^ extension ifNotNil: [ :ext | ext valueOfProperty: aSymbol ]
 ]
 
 { #category : #'accessing - properties' }
@@ -6724,8 +6734,7 @@ Morph >> viewBox [
 { #category : #drawing }
 Morph >> visible [
 	"answer whether the receiver is visible"
-	extension ifNil: [^ true].
-	^ extension visible
+	^ extension ifNil: [ true ] ifNotNil: [ :ext | ext visible ]
 ]
 
 { #category : #accessing }

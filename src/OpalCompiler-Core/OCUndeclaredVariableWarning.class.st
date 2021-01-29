@@ -26,9 +26,6 @@ OCUndeclaredVariableWarning >> declareGlobal [
 OCUndeclaredVariableWarning >> declareInstVar: name [
 	"Declare an instance variable."
 	self methodClass addInstVarNamed: name.
-	"We are changing a class after the scope hierarchy was created, so we need to update the
-	Instance Scope"
-	self methodNode scope instanceScope slots: self methodClass allSlots.
 	^ self lookUpVariable
 ]
 
@@ -201,7 +198,7 @@ OCUndeclaredVariableWarning >> openMenuIn: aBlock [
 	labels add: 'Cancel'.
 	caption := 'Unknown variable: ' , name , ' please correct, or cancel:'.
 	choice := aBlock value: labels value: lines value: caption.
-	choice ifNotNil: [ self resume: (actions at: choice ifAbsent: [ compilationContext failBlock value ]) value ]
+	^choice ifNotNil: [ self resume: (actions at: choice ifAbsent: [ compilationContext failBlock value ]) value ]
 ]
 
 { #category : #correcting }

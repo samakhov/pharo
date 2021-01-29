@@ -19,9 +19,17 @@ SpExecutableLayout >> adapterName [
 { #category : #accessing }
 SpExecutableLayout >> add: aName withConstraints: aBlock [
 	| constraints |
+
 	constraints := self constraintsClass new.
 	aBlock value: constraints.
 	children at: aName put: constraints
+]
+
+{ #category : #announcing }
+SpExecutableLayout >> announce: anAnnouncement [
+
+	announcer ifNil: [ ^ self ].
+	announcer announce: anAnnouncement
 ]
 
 { #category : #private }
@@ -31,7 +39,7 @@ SpExecutableLayout >> announceChildAdded: aChildPresenter [
 		self announcer announce: (SpChildrenAdded new
 			parent: self presenter;
 			child: aChildPresenter;
-			yourself)].
+			yourself) ]
 ]
 
 { #category : #private }
@@ -44,7 +52,7 @@ SpExecutableLayout >> announceChildRemoved: aChildPresenter [
 			yourself)].
 ]
 
-{ #category : #adding }
+{ #category : #announcing }
 SpExecutableLayout >> announcer [
 
 	^ announcer ifNil: [ announcer := Announcer new ]
@@ -87,6 +95,8 @@ SpExecutableLayout >> buildAdapterFor: aPresenter bindings: bindings [
 				presenter: aPresenter 
 				bindings: bindings) 
 			constraints: constraints ].
+		
+	adapter adapterWasBuilt.
 
 	^ adapter
 ]
@@ -144,6 +154,23 @@ SpExecutableLayout >> isExecutable [
 SpExecutableLayout >> isSpLayout [
 
 	^ true
+]
+
+{ #category : #accessing }
+SpExecutableLayout >> parentLayoutOf: aKey [ 
+	"Find a child layout that contains a presenter of given key. Useful if you need to find 
+	 a parent layout of a presenter that you need to replace."
+
+    (self children anySatisfy: [ :each | each = aKey ])
+        ifTrue: [ ^ self ].
+    
+    self children do: [ :each | 
+        each isSpLayout ifTrue: [ 
+            | found | 
+            found := each parentLayoutOf: aKey.
+            found ifNotNil: [ ^ found ] ] ].
+        
+    ^ nil 
 ]
 
 { #category : #accessing }
@@ -216,20 +243,17 @@ SpExecutableLayout >> selector: anObject [
 
 { #category : #private }
 SpExecutableLayout >> subpresenterOrLayoutNamed: presenterNameOrLayout of: aPresenter [
+
 	^ aPresenter additionalSubpresentersMap
 		at: presenterNameOrLayout
-		ifAbsent: [ aPresenter presenterAt: presenterNameOrLayout ifAbsent: [ self error: 'No presenter named "' , presenterNameOrLayout , '" was found in ' , aPresenter printString ] ]
+		ifAbsent: [ 
+			aPresenter 
+				presenterAt: presenterNameOrLayout 
+				ifAbsent: [ 
+					self error: 'No presenter named "' , presenterNameOrLayout , '" was found in ' , aPresenter printString ] ]
 ]
 
-{ #category : #accessing }
-SpExecutableLayout >> traversePresentersDo: aBlock [
-
-	self 
-		traversePresentersDo: aBlock 
-		excluding: Set new
-]
-
-{ #category : #adding }
+{ #category : #events }
 SpExecutableLayout >> whenChildrenAddedDo: aBlock [
 
 	self announcer
@@ -237,7 +261,7 @@ SpExecutableLayout >> whenChildrenAddedDo: aBlock [
 		do: aBlock
 ]
 
-{ #category : #adding }
+{ #category : #events }
 SpExecutableLayout >> whenChildrenRemovedDo: aBlock [
 
 	self announcer

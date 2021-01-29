@@ -668,6 +668,22 @@ RGBehavior >> localSelectors [
 	^ self localMethods collect: [ :each | each name ]
 ]
 
+{ #category : #lookup }
+RGBehavior >> lookupVar: aName [
+	^ self layout 
+		resolveSlot: aName asSymbol 
+		ifFound: [:var | var] 
+		ifNone: [self bindingOf: aName]
+]
+
+{ #category : #lookup }
+RGBehavior >> lookupVarForDeclaration: aName [
+
+	"This is a version of #lookupVar: that skips the OCRequestorScope, from here on it is the same as lookupVar:"
+
+	^ self lookupVar: aName
+]
+
 { #category : #resolving }
 RGBehavior >> makeResolved [
 

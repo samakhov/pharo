@@ -172,6 +172,12 @@ Collection >> addAll: aCollection [
 ]
 
 { #category : #adding }
+Collection >> addAssignToFloatArray: aFloatArray [
+	1 to: aFloatArray size do: [ :i | aFloatArray at: i put: (aFloatArray at: i) + (self at: i) ].
+	^ aFloatArray
+]
+
+{ #category : #adding }
 Collection >> addIfNotPresent: anObject [
 	"Include anObject as one of the receiver's elements, but only if there
 	is no such element already. Anwser anObject."
@@ -591,17 +597,6 @@ Collection >> detectMin: aBlock [
 				"Note that there is no way to get the first element that works 
 				for all kinds of Collections.  Must test every one."].
 	^ minElement
-]
-
-{ #category : #enumerating }
-Collection >> detectSum: aBlock [
-	"Evaluate aBlock with each of the receiver's elements as the argument. 
-	Return the sum of the answers."
-	| sum |
-	sum := 0.
-	self do: [:each | 
-		sum := (aBlock value: each) + sum].  
-	^ sum
 ]
 
 { #category : #enumerating }

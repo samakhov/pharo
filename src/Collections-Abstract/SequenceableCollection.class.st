@@ -789,6 +789,12 @@ SequenceableCollection >> detectIndex: aBlock ifNone: exceptionBlock [
 ]
 
 { #category : #enumerating }
+SequenceableCollection >> difference: aCollection [
+	"Answer the difference of two sequences preserving order and collection type."
+	^ self reject: [:each | aCollection includes: each]
+]
+
+{ #category : #enumerating }
 SequenceableCollection >> do: aBlock [ 
 	"Refer to the comment in Collection|do:."
 	1 to: self size do:
@@ -2080,7 +2086,7 @@ SequenceableCollection >> shuffleBy: aRandom [
 	"#(1 2 3 4 5) shuffleBy: (Random seed: 42) >>> #(2 5 4 3 1)"
 
 	self size to: 2 by: -1 do: [ :i | 
-		self swap: i with: (aRandom nextInt: i) ]
+		self swap: i with: (aRandom nextInteger: i) ]
 ]
 
 { #category : #copying }

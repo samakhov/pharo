@@ -62,41 +62,19 @@ StDebuggerContextTest >> setUp [
 ]
 
 { #category : #tests }
-StDebuggerContextTest >> testArgsPriorityOverTempsWhenDuplicates [
-	|nodes argsNodes argsNames tempNodes tempsNames duplicates|
-	debuggerContext context: self contextWithArgs.
-	nodes := debuggerContext buildInspectorNodes.		
-	argsNodes := debuggerContext argumentsNodes.
-	argsNames := (argsNodes collect:[:n| n key]).	
-	tempNodes := debuggerContext temporaryVariablesNodes.	
-	tempsNames := (tempNodes collect:[:n| n key]) asSortedCollection.
-	
-	"Args nodes are counted in the temps, we can detect them by their name"
-	self assertCollection: tempsNames includesAll: argsNames.	
-	
-	"However, the final nodes collection filters duplicates.
-	We select argument rather than temps when there is a duplicate"
-	self assertCollection: nodes includesAll: argsNodes. 
-	
-	"If we check the arguments also counted as temps, those duplicates temps are not in the final nodes collection."
-	duplicates := tempNodes select: [ :node| argsNames includes: node key].      
-	self denyCollection: nodes includesAll: duplicates   
-]
-
-{ #category : #tests }
 StDebuggerContextTest >> testArgumentsNodes [
 	|nodes| 
 	debuggerContext context: self contextWithArgs.
-	nodes := debuggerContext argumentsNodes.	
+	nodes := debuggerContext temporaryVariablesNodes select: [ :tempNode | tempNode tempVariable isArgumentVariable ].	
 	self assert: nodes size equals: 2.
 	self assert: nodes first key equals: 'i'.
 	self assert: nodes first variableTag equals: 'arg'.
 	self assert: nodes first rawValue equals: 4.
-	self assert: nodes first class equals: StDebuggerInspectorTempNode.
+	self assert: nodes first class equals: StInspectorTempNode.
 	self assert: nodes second key equals: 'j'.
 	self assert: nodes second variableTag equals: 'arg'.
 	self assert: nodes second rawValue equals: 2.
-	self assert: nodes second class equals: StDebuggerInspectorTempNode.
+	self assert: nodes second class equals: StInspectorTempNode.
 	self deny: (nodes anySatisfy: [:n| n key = 'self'])
 ]
 
@@ -104,7 +82,7 @@ StDebuggerContextTest >> testArgumentsNodes [
 StDebuggerContextTest >> testArgumentsNodesInBlock [
 	|nodes|
 	debuggerContext context: self contextWithArgsInBlock.
-	nodes := debuggerContext argumentsNodes.	
+	nodes := debuggerContext temporaryVariablesNodes select: [ :tempNode | tempNode tempVariable isArgumentVariable ].	
 	self assert: nodes size equals: 2.
 	self assert: nodes first key equals: 'a'.
 	self assert: nodes first variableTag equals: 'arg'.
@@ -129,7 +107,7 @@ StDebuggerContextTest >> testBuildInspectorNodes [
 	self assertCollection: nodesNames includesAll: #(#a #b).
 
 	"Self"
-	self assertCollection: nodesNames includesAll: #(#instVar).
+	self assertCollection: nodesNames includesAll: #(#self #instVar).
 	
 	"Stacktop"
 	self assertCollection: nodesNames includesAll: #('stackTop').
@@ -138,7 +116,7 @@ StDebuggerContextTest >> testBuildInspectorNodes [
 	self assertCollection: nodesNames includesAll: #('thisContext').	
 	
 	"There is no more elements"
-	self assert: nodesNames size equals: 7
+	self assert: nodesNames size equals: 8
 ]
 
 { #category : #tests }
@@ -173,8 +151,17 @@ StDebuggerContextTest >> testReceiverNodes [
 	nodes := debuggerContext receiverNodes.
 	self assert: nodes size equals: 1.
 	self assert: nodes first key equals: 'instVar'.
-	self assert: nodes first rawValue equals: hostObject instVar.
-	self deny: (nodes anySatisfy: [ :n | n key = 'self' ])
+	self assert: nodes first rawValue equals: hostObject instVar
+]
+
+{ #category : #tests }
+StDebuggerContextTest >> testSelfNodes [
+
+	| node |
+	debuggerContext context: self contextWithTemps.
+	node := debuggerContext selfNode.
+	self assert: node key equals: 'self'.
+	self assert: node rawValue identicalTo: hostObject.
 ]
 
 { #category : #tests }
@@ -196,11 +183,11 @@ StDebuggerContextTest >> testTemporaryVariablesNodes [
 	self assert: nodes first key equals: 'a'.
 	self assert: nodes first variableTag equals: 'temp'.	
 	self assert: nodes first rawValue equals: 0.
-	self assert: nodes first class equals: StDebuggerInspectorTempNode.
+	self assert: nodes first tempVariable isTempVariable.
 	self assert: nodes second key equals: 'b'.
 	self assert: nodes second variableTag equals: 'temp'.	
 	self assert: nodes second rawValue equals: nil.
-	self assert: nodes second class equals: StDebuggerInspectorTempNode.
+	self assert: nodes first tempVariable isTempVariable.
 	self deny: (nodes anySatisfy: [:n| n key = 'self'])
 ]
 

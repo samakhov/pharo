@@ -9,7 +9,9 @@ Class {
 	#name : #RBCompositeRefactoryChange,
 	#superclass : #RBRefactoryChange,
 	#instVars : [
-		'changes'
+		'changes',
+		'newName',
+		'oldName'
 	],
 	#category : #'Refactoring-Changes'
 }
@@ -52,6 +54,11 @@ RBCompositeRefactoryChange >> addInstanceVariable: variableName to: aClass [
 { #category : #'refactory-changes' }
 RBCompositeRefactoryChange >> addPool: aPoolVariable to: aClass [ 
 	^ self addChange: (changeFactory addPoolVariable: aPoolVariable to: aClass)
+]
+
+{ #category : #accessing }
+RBCompositeRefactoryChange >> changeClass [
+	^ self subclassResponsibility
 ]
 
 { #category : #accessing }
@@ -127,6 +134,16 @@ RBCompositeRefactoryChange >> initialize [
 	changes := OrderedCollection new
 ]
 
+{ #category : #accessing }
+RBCompositeRefactoryChange >> newName [
+	^ self subclassResponsibility
+]
+
+{ #category : #accessing }
+RBCompositeRefactoryChange >> oldName [
+	^ self subclassResponsibility
+]
+
 { #category : #copying }
 RBCompositeRefactoryChange >> postCopy [
 	super postCopy.
@@ -189,16 +206,16 @@ RBCompositeRefactoryChange >> renameChangesForClass: oldClassName to: newClassNa
 ]
 
 { #category : #'refactory-changes' }
-RBCompositeRefactoryChange >> renameClass: class to: newName [ 
-	^ self addChange: (changeFactory renameClass: class to: newName)
+RBCompositeRefactoryChange >> renameClass: class to: newNameLocal [ 
+	^ self addChange: (changeFactory renameClass: class to: newNameLocal)
 ]
 
 { #category : #'refactory-changes' }
-RBCompositeRefactoryChange >> renameClassVariable: oldName to: newName in: aClass [
-	^ self addChange: (changeFactory renameClassVariable: oldName to: newName in: aClass)
+RBCompositeRefactoryChange >> renameClassVariable: oldNameLocal to: newNameLocal in: aClass [
+	^ self addChange: (changeFactory renameClassVariable: oldNameLocal to: newNameLocal in: aClass)
 ]
 
 { #category : #'refactory-changes' }
-RBCompositeRefactoryChange >> renameInstanceVariable: oldName to: newName in: aClass [
-	^ self addChange: (changeFactory renameInstanceVariable: oldName to: newName in: aClass)
+RBCompositeRefactoryChange >> renameInstanceVariable: oldNameLocal to: newNameLocal in: aClass [
+	^ self addChange: (changeFactory renameInstanceVariable: oldNameLocal to: newNameLocal in: aClass)
 ]

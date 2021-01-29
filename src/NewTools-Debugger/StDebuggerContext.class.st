@@ -19,26 +19,15 @@ StDebuggerContext class >> context: aContext [
 		  yourself
 ]
 
-{ #category : #nodes }
-StDebuggerContext >> argumentsNodes [
-
-	| argNames |
-	argNames := self context sourceNode arguments.
-	^ (argNames collect: [ :argName | 
-		   (StDebuggerInspectorTempNode hostObject: self context) 
-			   argVariable: (self context temporaryVariableNamed: argName name) ])
-		  asOrderedCollection
-]
-
 { #category : #accessing }
 StDebuggerContext >> buildInspectorNodes [
 
-	| nodes argsNodes argsKeys tempsNodes |
+	| nodes argsNodes tempsNodes tempsAndArgs |
 	nodes := OrderedCollection new.
-	argsNodes := self argumentsNodes.
-	argsKeys := argsNodes collect: [ :node | node key ].
-	tempsNodes := self temporaryVariablesNodes reject: [ :tempNode | 
-		              argsKeys includes: tempNode key ].
+	tempsAndArgs := self temporaryVariablesNodes.
+	argsNodes := tempsAndArgs select: [ :tempNode | tempNode tempVariable isArgumentVariable ].
+	tempsNodes := tempsAndArgs select: [ :tempNode | tempNode tempVariable isTempVariable ].
+	nodes add: self selfNode.
 	nodes addAll: argsNodes.
 	nodes addAll: tempsNodes.
 	nodes addAll: self receiverNodes.
@@ -66,7 +55,14 @@ StDebuggerContext >> printOn: aStream [
 { #category : #nodes }
 StDebuggerContext >> receiverNodes [
 
-	^ self context receiver allInspectorNodes reject: [ :node | node key = 'self' ]
+	^ self context receiver allInspectorNodes reject: [ :node | 
+		  node label = 'self' ]
+]
+
+{ #category : #nodes }
+StDebuggerContext >> selfNode [
+
+	^ StInspectorSelfNode hostObject: self context receiver
 ]
 
 { #category : #nodes }
@@ -78,7 +74,7 @@ StDebuggerContext >> stackTopNode [
 StDebuggerContext >> temporaryVariablesNodes [
 
 	^ self context astScope allTemps collect: [ :temp | 
-		  (StDebuggerInspectorTempNode hostObject: self context) tempVariable: temp ]
+		  (StInspectorTempNode hostObject: self context) tempVariable: temp ]
 ]
 
 { #category : #nodes }

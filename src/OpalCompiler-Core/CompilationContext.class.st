@@ -328,7 +328,7 @@ CompilationContext class >> optionsDescription [
 	
 	(- optionEmbeddSources         'Embedd sources into CompiledMethod instead of storing in .changes')
 	
-	(- optionReadOnlyLiterals 			'Compiler sets literals as read-only')
+	(+ optionReadOnlyLiterals 			'Compiler sets some literals as read-only')
 	(- optionFullBlockClosure 			'Compiler compiles closure creation to use FullBlockClosure instead of BlockClosure')
 	(- optionCleanBlockClosure 			'Compiler compiles closure creation to use CleanBlockClosure instead of FullBlockClosure for clean blocks. Experimental')
 	(- optionLongIvarAccessBytecodes 	'Specific inst var accesses to Maybe context objects')
@@ -385,9 +385,9 @@ CompilationContext >> bindings [
 { #category : #accessing }
 CompilationContext >> bindings: aCollectionOfAssociations [
 	"bindings are LiteralVariables, not simple Associations.
-	This method receives any collection with bindings inside and converts it to a dictionary of AdditionalBindings"
+	This method receives any collection with Associations or Variables inside and converts those to AdditionalBindings"
 	bindings := (aCollectionOfAssociations asDictionary associations
-		collect: [ :each | AdditionalBinding key: each key value: each value ]) asDictionary
+		collect: [ :each | (each isAssociation ifTrue: [ AdditionalBinding key: each key value: each value ] ifFalse: [each])]) asDictionary
 ]
 
 { #category : #accessing }
@@ -656,7 +656,7 @@ CompilationContext >> requestorScopeClass: anObject [
 CompilationContext >> scope [
 	| newScope |
 
-	newScope := (OCClassScope for: self getClass) outerScope: self environment.
+	newScope := self getClass.
 	requestor ifNotNil: [
 		"the requestor is allowed to manage variables, the workspace is using it to auto-define vars"  
 		newScope := (self requestorScopeClass new

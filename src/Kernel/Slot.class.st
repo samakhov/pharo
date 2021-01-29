@@ -29,9 +29,6 @@ Class {
 		'owningClass',
 		'definingClass'
 	],
-	#classInstVars : [
-		'slotClassDefinition'
-	],
 	#category : #'Kernel-Variables'
 }
 
@@ -67,23 +64,22 @@ Slot class >> isUsed [
 
 { #category : #settings }
 Slot class >> showSlotClassDefinition [
-	^slotClassDefinition ifNil: [ slotClassDefinition := false ]
+	self 
+		deprecated: 'Do not use Slot class directly use ClassDefinitionPrinter' 
+		transformWith:
+	'Slot showSlotClassDefinition' -> 'ClassDefinitionPrinter showFluidClassDefinition'.
+	^ ClassDefinitionPrinter showFluidClassDefinition
+
 ]
 
 { #category : #settings }
 Slot class >> showSlotClassDefinition: aBoolean [
-	slotClassDefinition := aBoolean
-]
+	self 
+		deprecated: 'Do not use Slot class directly use ClassDefinitionPrinter' 
+		transformWith:
+	'Slot showSlotClassDefinition: @val' -> 'ClassDefinitionPrinter showFluidClassDefinition: @val'.
+	ClassDefinitionPrinter showFluidClassDefinition: aBoolean
 
-{ #category : #settings }
-Slot class >> slotSetting: aBuilder [ 
-	<systemsettings>
-	(aBuilder setting: #showSlotClassDefinition) 
-		label: 'Class Template with Slots';
-		default: false;
-		description: 'If checked then browsers show always the slot class definition';
-		parent: #codeBrowsing; 
-		target: self
 ]
 
 { #category : #testing }
@@ -127,9 +123,15 @@ Slot >> definingClass: aClass [
 ]
 
 { #category : #printing }
+Slot >> definitionOn: aStream [
+	"Every subclass that adds state must redefine either this method or #printOn:"
+	^ self printOn: aStream
+]
+
+{ #category : #printing }
 Slot >> definitionString [
 	"Every subclass that adds state must redefine either this method or #printOn:"
-	^ self printString
+	^ String streamContents: [:s | self definitionOn: s]
 ]
 
 { #category : #'code generation' }
@@ -142,7 +144,7 @@ Slot >> emitStore: aMethodBuilder [
 		storeTemp: tempName;
 		popTop;
 		pushReceiver;
-		pushLiteralVariable: (AdditionalBinding key: #slot value: self);
+		pushLiteral: self;
 		pushTemp: tempName;
 		send: #writeSlot:value:
 ]
@@ -150,7 +152,7 @@ Slot >> emitStore: aMethodBuilder [
 { #category : #'code generation' }
 Slot >> emitValue: aMethodBuilder [
 	aMethodBuilder
-		pushLiteralVariable: (AdditionalBinding key: #slot value: self);
+		pushLiteral: self;
 		pushReceiver;
 		send: #read:
 ]
@@ -181,11 +183,6 @@ Slot >> ensureSlotInitializationFor: aClass [
 	self class initializeSlots: self.' , source.
 
 	Author useAuthor: 'Generated' during: [ aClass compile: source classified: 'initialization' ]
-]
-
-{ #category : #finalization }
-Slot >> finalize: layout [
-	"nothing to do here"
 ]
 
 { #category : #comparing }
@@ -297,6 +294,11 @@ Slot >> read: anObject [
 { #category : #debugging }
 Slot >> readInContext: aContext [
 	^self read: aContext receiver
+]
+
+{ #category : #accessing }
+Slot >> scope [
+	^ self owningClass
 ]
 
 { #category : #accessing }

@@ -87,16 +87,6 @@ Behavior >> addSelector: selector withMethod: compiledMethod [
 ]
 
 { #category : #'adding/removing methods' }
-Behavior >> addSelector: selector withMethod: compiledMethod notifying: requestor [
-	self
-		deprecated: 'Please use #addSelector:withMethod: instead'
-		transformWith:
-			'`@receiver addSelector: `@statements1 withMethod: `@statements2 notifying: `@statements3'
-		   -> '`@receiver addSelector: `@statements1 withMethod: `@statements2'.
-	^ self addSelector: selector withMethod: compiledMethod
-]
-
-{ #category : #'adding/removing methods' }
 Behavior >> addSelector: selector withRecompiledMethod: compiledMethod [ 
 	^ self addSelectorSilently: selector withMethod: compiledMethod
 ]
@@ -372,16 +362,6 @@ Behavior >> allSuperclassesIncluding: aClass [
 			temp]
 ]
 
-{ #category : #'adding/removing methods' }
-Behavior >> basicAddSelector: selector withMethod: compiledMethod [
-	self
-		deprecated: 'Please use #addSelectorSilently:withMethod: instead'
-		transformWith:
-			'`@receiver basicAddSelector: `@statements1 withMethod: `@statements2'
-		   -> '`@receiver addSelectorSilently: `@statements1 withMethod: `@statements2'.
-	self addSelectorSilently: selector withMethod: compiledMethod
-]
-
 { #category : #'reflective operations' }
 Behavior >> basicIdentityHash [
 	"Answer a 22 bits unsigned SmallInteger, whose value is related to the receiver's identity
@@ -576,18 +556,6 @@ Behavior >> cleanUp: aggressive [
 ]
 
 { #category : #'accessing method dictionary' }
-Behavior >> commentsAt:  selector [
-	self 
-		deprecated: 'use #comments on the method instead' 
-		transformWith: '`@receiver commentsAt: `@argument'
-						-> '(`@receiver compiledMethodAt: `@argument) comments'.
-	
-	^(self compiledMethodAt: selector) comments.
-	
-
-]
-
-{ #category : #'accessing method dictionary' }
 Behavior >> compiledMethodAt: selector [ 
 	"Answer the compiled method associated with the argument, selector (a 
 	Symbol), a message selector in the receiver's method dictionary. If the 
@@ -721,26 +689,6 @@ Behavior >> findOriginMethodOf: aMethod [
 
 ]
 
-{ #category : #'accessing method dictionary' }
-Behavior >> firstCommentAt:  selector [
-	
-	self 
-		deprecated: 'use #firstComment on the method instead' 
-		transformWith: '`@receiver commentsAt: `@argument'
-						-> '(`@receiver compiledMethodAt: `@argument) firstComment'.
-	
-	^(self compiledMethodAt: selector) firstComment
-]
-
-{ #category : #'accessing method dictionary' }
-Behavior >> firstPrecodeCommentFor:  selector [
-	self 
-		deprecated: 'use #comment on the method' 
-		transformWith: '`@receiver firstPrecodeCommentFor: `@arg' -> '(`@receiver>>`@arg) comment'.
-	^(self>>selector) comment
-	
-]
-
 { #category : #private }
 Behavior >> flushCache [
 	"Tell the virtual machine to remove the contents of its method lookup caches, if it has any.  This must be done when the system 	modifies the class hierarchy so that message lookups reflect the revised organization.  c.f. Symbol>>flushCache & 	CompiledMethod>>flushCache.  Essential. See MethodDictionary class comment."
@@ -855,6 +803,12 @@ Behavior >> hasMethods [
 	"Answer whether the receiver has any methods in its method dictionary."
 
 	^ self methodDict notEmpty
+]
+
+{ #category : #'accessing-properties' }
+Behavior >> hasProperty: aKey [
+	self propertyAt: aKey ifAbsent: [ ^ false ].
+	^ true
 ]
 
 { #category : #'testing method dictionary' }
@@ -1152,7 +1106,7 @@ Behavior >> isRootInEnvironment [
 
 { #category : #testing }
 Behavior >> isUsed [
-	"the class us used somehow. This is client specific, subclasses can override"
+	"the class is used somehow. This is client specific, subclasses can override"
 
 	^ self isReferenced
 ]
@@ -1197,28 +1151,8 @@ Behavior >> isWords [
 
 { #category : #'testing class hierarchy' }
 Behavior >> kindOfSubclass [
-	"Answer a String that is the keyword that describes the receiver's kind of subclass,
-	 either a regular subclass, a variableSubclass, a variableByteSubclass,
-	 a variableWordSubclass, a weakSubclass, an ephemeronSubclass or an immediateSubclass.
-	 c.f. typeOfClass"
-	^self isVariable
-		ifTrue:
-			[self isBits
-				ifTrue:
-					[self isBytes
-						ifTrue: [' variableByteSubclass: ']
-						ifFalse: [' variableWordSubclass: ']]
-				ifFalse:
-					[self isWeak
-						ifTrue: [' weakSubclass: ']
-						ifFalse: [' variableSubclass: ']]]
-		ifFalse:
-			[self isImmediateClass
-				ifTrue: [' immediateSubclass: ']
-				ifFalse:
-					[self isEphemeronClass
-						ifTrue: [' ephemeronSubclass: ']
-						ifFalse: [' subclass: ']]]
+	"Answer a String that is the keyword that describes the receiver's kind of subclass"
+	^ self classLayout kindOfSubclass
 ]
 
 { #category : #printing }
@@ -1455,6 +1389,12 @@ Behavior >> removeSelectorSilently: selector [
 	"Remove selector without sending system change notifications"
 
 	^ SystemAnnouncer uniqueInstance suspendAllWhile: [self removeSelector: selector].
+]
+
+{ #category : #cleanup }
+Behavior >> restartMethods [
+	"Clean up. Long running loops or stored closures can lead to methods that are out if sync with the recompiled code. Subclasses should override this method if they need to restart methods"
+
 ]
 
 { #category : #enumerating }
@@ -1733,19 +1673,7 @@ Behavior >> thoroughWhichSelectorsReferTo: literal [
 { #category : #accessing }
 Behavior >> typeOfClass [
 	"Answer a symbol uniquely describing the type of the receiver. c.f. kindOfSubclass"
-	self classLayout isCustomLayout ifTrue: [ ^self classLayout class name asSymbol].
-	self isBytes ifTrue:
-		[^self instSpec = CompiledMethod instSpec
-			ifTrue: [#compiledMethod] "Very special!"
-			ifFalse: [#bytes]].
-	(self isWords and: [self isPointers not]) ifTrue:
-		[^self instSpec = SmallInteger instSpec
-			ifTrue: [#immediate] "Very special!"
-			ifFalse: [#words]].
-	self isWeak ifTrue: [^#weak].
-	self isVariable ifTrue: [^#variable].
-	self isEphemeronClass ifTrue: [^#ephemeron].
-	^#normal
+	^self classLayout typeOfClass
 ]
 
 { #category : #'user interface' }

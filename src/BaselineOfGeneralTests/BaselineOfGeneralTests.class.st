@@ -25,7 +25,6 @@ BaselineOfGeneralTests >> baseline: spec [
 			package: 'Collections-Arithmetic-Tests';
 			package: 'ConfigurationCommandLineHandler-Tests';
 			package: 'MetacelloCommandLineHandler-Tests';
-			package: 'Debugger-Filters-Tests';
 			package: 'Debugger-Model-Tests';
 			package: 'Debugger-Oups-Tests';
 			package: 'EmergencyDebugger-Tests';
@@ -71,6 +70,7 @@ BaselineOfGeneralTests >> baseline: spec [
 			package: 'Tool-Finder-Tests';
 			package: 'Tool-Profilers-Tests';
 			package: 'Tool-Workspace-Tests';
+			package: 'Tools-CodeNavigation-Tests';
 			package: 'Tools-Test';
 			package: 'Zinc-Resource-Meta-FileSystem';
 			package: 'Zinc-Resource-Meta-Tests';

@@ -110,12 +110,14 @@ FLSerializationTest >> newClassInCategory: aCategory [
 { #category : #'class-factory' }
 FLSerializationTest >> newSubclassNamed: nameString of: aClass  instanceVariableNames: ivNamesString classVariableNames: classVarsString [
 	| class |
+
 	SystemAnnouncer uniqueInstance suspendAllWhile: [
-		class := aClass
-			subclass: nameString asSymbol
-			instanceVariableNames: ivNamesString
-			classVariableNames:  classVarsString
-			category: self classFactory defaultCategory
+		class := self class classInstaller make: [ :aBuilder | 
+		aBuilder 
+			name: nameString;
+			superclass: aClass;
+			slots: ivNamesString asSlotCollection;
+			sharedVariablesFromString: classVarsString ].	
 	].
 	self classFactory createdClasses add: class.
 	^ class
@@ -282,12 +284,6 @@ FLSerializationTest >> traitNamePrefix [
 ]
 
 { #category : #'stream-strategies' }
-FLSerializationTest >> useBinaryFileStream [
-
-	streamFactory := FLFileStreamStrategy newWithBinaryFileStream
-]
-
-{ #category : #'stream-strategies' }
 FLSerializationTest >> useGzipInMemoryStream [
 
 	streamFactory := FLGZipStrategy newWithTarget: FLByteArrayStreamStrategy new
@@ -303,18 +299,6 @@ FLSerializationTest >> useInMemorySerializationStream [
 FLSerializationTest >> useMemoryStream [
 
 	streamFactory := FLMultiByteStreamStrategy new
-]
-
-{ #category : #'stream-strategies' }
-FLSerializationTest >> useMultiByteFileStream [
-
-	streamFactory := FLFileStreamStrategy newWithMultiByteFileStream
-]
-
-{ #category : #'stream-strategies' }
-FLSerializationTest >> useStandardFileStream [
-
-	streamFactory := FLFileStreamStrategy newWithStandardFileStream
 ]
 
 { #category : #'class-factory' }

@@ -18,6 +18,12 @@ ClassTest >> categoryNameForTemporaryClasses [
 	^'Dummy-Tests-Class' 
 ]
 
+{ #category : #coverage }
+ClassTest >> classToBeTested [
+	
+	^ Class
+]
+
 { #category : #setup }
 ClassTest >> deleteClass [
 	| cl |
@@ -54,11 +60,12 @@ ClassTest >> setUp [
 	className := #TUTU.
 	testEnvironment:= Smalltalk globals.
 	self deleteClass.
-	Object subclass: className
-		instanceVariableNames: ''
-		classVariableNames: ''
-		poolDictionaries: ''
-		category: self categoryNameForTemporaryClasses
+	
+	self class classInstaller make: [ :aBuilder |
+		aBuilder 
+			name: className;
+			package: self categoryNameForTemporaryClasses]
+
 ]
 
 { #category : #running }
@@ -148,6 +155,78 @@ ClassTest >> testClassSide [
 ]
 
 { #category : #tests }
+ClassTest >> testClassVariableEntanglement [ 
+	| firstClassName firstClass secondClassName secondClass thirdClassName thirdClass |
+
+	firstClassName := 'MyFirstClass'.
+
+	firstClass := self class classInstaller make: [ :aBuilder |
+		aBuilder 
+			name: firstClassName;
+			sharedVariablesFromString: 'MyVar';
+			package: self categoryNameForTemporaryClasses ].
+		
+	[ 
+
+		firstClass class compile: 'myVar
+	^ MyVar'.
+		firstClass class compile: 'myVar: anObject
+	MyVar := anObject'.
+
+		secondClassName := 'MySecondClass'.
+
+		secondClass := self class classInstaller make: [ :aBuilder |
+			aBuilder 
+				name: secondClassName;
+				sharedVariablesFromString: 'MyVar';
+				package: self categoryNameForTemporaryClasses ].
+			
+		[ 
+
+			secondClass class compile: 'myVar
+	^ MyVar'.
+			secondClass class compile: 'myVar: anObject
+		MyVar := anObject'.
+
+			thirdClassName := 'MyThirdClass'.
+			thirdClass := secondClass duplicateClassWithNewName: thirdClassName.
+			[ 
+
+				self assert: firstClass myVar equals: nil.
+				self assert: secondClass myVar equals: nil.
+				self assert: thirdClass myVar equals: nil.
+	
+				firstClass myVar: 123.
+				self assert: firstClass myVar equals: 123.
+				self assert: secondClass myVar equals: nil.
+				self assert: thirdClass myVar equals: nil.
+
+				secondClass myVar: 456.
+				self assert: firstClass myVar equals: 123.
+				self assert: secondClass myVar equals: 456.
+				self assert: thirdClass myVar equals: nil.
+
+				thirdClass myVar: 789.
+				self assert: firstClass myVar equals: 123.
+				self assert: secondClass myVar equals: 456.
+				self assert: thirdClass myVar equals: 789.
+
+			 ] ensure: [ 
+				thirdClass 
+					removeFromChanges;
+					removeFromSystemUnlogged ].
+		 ] ensure: [ 
+			secondClass 
+				removeFromChanges;
+				removeFromSystemUnlogged ].
+	 ] ensure: [ 
+		firstClass 
+			removeFromChanges;
+			removeFromSystemUnlogged ].
+
+]
+
+{ #category : #tests }
 ClassTest >> testCommonSuperclassWith [
 	self assert: (OrderedCollection commonSuperclassWith: Array) equals: SequenceableCollection.
 	self assert: (OrderedCollection commonSuperclassWith: OrderedCollection) equals: SequenceableCollection.
@@ -183,10 +262,14 @@ ClassTest >> testEnvironment: anObject [
 { #category : #tests }
 ClassTest >> testHasBindingThatBeginsWith [
 	self assert: (SmalltalkImage hasBindingThatBeginsWith: 'Compiler').
-	self deny: (SmalltalkImage hasBindingThatBeginsWith: 'Object').
+	self assert: (SmalltalkImage hasBindingThatBeginsWith: 'Object').
 	
 	"Pools are looked up, too"
-	self assert: (TimeZone hasBindingThatBeginsWith: 'DaysInMo')
+	self assert: (TimeZone hasBindingThatBeginsWith: 'DaysInMo').
+	
+	"CompiledMethodLayout works, too"
+	self deny: (CompiledMethod hasBindingThatBeginsWith: 'Compiler').
+
 ]
 
 { #category : #'tests - access' }
@@ -342,7 +425,11 @@ ClassTest >> testReferencedClasses [
 	}
 		do: [ :assoc | 
 			self assert: assoc key referencedClasses notEmpty.
-			self assert: (assoc key referencedClasses asSet includesAll: assoc value asSet)]
+			self assert: (assoc key referencedClasses asSet includesAll: assoc value asSet)].
+		
+	"classes referenced from class variables should not be seen as referenced statically"
+	self assert: (SmalltalkImage class>>#compilerClass ) referencedClasses isEmpty.
+	
 ]
 
 { #category : #tests }
@@ -394,7 +481,8 @@ ClassTest >> testSubclass [
 	(testEnvironment includesKey: #SubclassExample) ifTrue: [ (testEnvironment at: #SubclassExample) removeFromSystem ].
 
 	self deny: (testEnvironment includesKey: #SubclassExample).
-	cls := Object subclass: #SubclassExample.
+	cls := self class classInstaller make: [ :aBuilder | aBuilder name: #SubclassExample ].
+	
 	self assert: (testEnvironment includesKey: #SubclassExample).
 
 	self assert: (testEnvironment at: #SubclassExample) identicalTo: cls.
@@ -410,7 +498,12 @@ ClassTest >> testSubclassInstanceVariableNames [
 	(testEnvironment includesKey: #SubclassExample) ifTrue: [ (testEnvironment at: #SubclassExample) removeFromSystem ].
 
 	self deny: (testEnvironment includesKey: #SubclassExample).
-	cls := Object subclass: #SubclassExample instanceVariableNames: 'x y'.
+
+	cls := self class classInstaller make: [ :aBuilder | 
+		aBuilder 
+			name: #SubclassExample;
+			slots: 'x y' asSlotCollection].
+
 	self assert: (testEnvironment includesKey: #SubclassExample).
 
 	self assert: (testEnvironment at: #SubclassExample) identicalTo: cls.

@@ -45,6 +45,11 @@ def runTests(architecture, prefix=''){
             shell "mv crash.dmp crash-${env.STAGE_NAME}${prefix}.dmp"
             archiveArtifacts allowEmptyArchive: true, artifacts: "crash-${env.STAGE_NAME}${prefix}.dmp", fingerprint: true
         }
+        if(fileExists('progress.log')){
+            shell "mv progress.log progress-${env.STAGE_NAME}${prefix}.log"
+            shell "cat progress-${env.STAGE_NAME}${prefix}.log"
+            archiveArtifacts allowEmptyArchive: true, artifacts: "progress-${env.STAGE_NAME}${prefix}.log", fingerprint: true
+        }
     }
   }
 }
@@ -172,6 +177,16 @@ def bootstrapImage(){
     }
     
       } finally {
+          shell "ls -la"
+          if(fileExists('PharoDebug.log')){
+              shell "mv PharoDebug.log PharoDebug-bootstrap.log"
+              archiveArtifacts allowEmptyArchive: true, artifacts: "PharoDebug-bootstrap.log", fingerprint: true
+          }
+          if(fileExists('crash.dmp')){
+              shell "mv crash.dmp crash-bootstrap.dmp"
+              archiveArtifacts allowEmptyArchive: true, artifacts: "crash-bootstrap.dmp", fingerprint: true
+          }
+
         archiveArtifacts artifacts: 'bootstrap-cache/*.zip,bootstrap-cache/*.sources', fingerprint: true
         cleanWs()
       }

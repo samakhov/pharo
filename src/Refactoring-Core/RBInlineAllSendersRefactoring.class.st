@@ -4,22 +4,27 @@ I am a refactoring for inlining code of this method.
 The call to this method in all other methods of this class is replaced by its implementation. The method itself will be removed.
 
 For example, a method 
+
+```
 foo
 	^ 'text'.
-	
+```	
 is called in
+
+```
 baz
-	|a|
-	a:= self foo.
+	| a |
+	a := self foo.
 	^ self foo.
-	
+```	
 inlining in all senders replaces the call to method foo, with its code:
 
+```
 baz
-	|a|
-	a:= 'text'.
+	| a |
+	a := 'text'.
 	^ 'text'.
-
+```
 
 "
 Class {
@@ -65,7 +70,7 @@ RBInlineAllSendersRefactoring >> inlineMessagesInClass: aClass andSelector: aSel
 				previousCountOfMessages := messagesToInline.
 				node := self selfSendIn: (aClass parseTreeFor: aSelector).
 				self onError: 
-						[self performComponentRefactoring: (RBInlineMethodRefactoring 
+						[self performCompositeRefactoring: (RBInlineMethodRefactoring 
 									model: self model
 									inline: node sourceInterval
 									inMethod: aSelector
@@ -113,7 +118,7 @@ RBInlineAllSendersRefactoring >> preconditions [
 { #category : #transforming }
 RBInlineAllSendersRefactoring >> removeMethod [
 	self onError: 
-			[self performComponentRefactoring: (RBRemoveMethodRefactoring 
+			[self performCompositeRefactoring: (RBRemoveMethodRefactoring 
 						model: self model
 						removeMethods: (Array with: selector)
 						from: class)]

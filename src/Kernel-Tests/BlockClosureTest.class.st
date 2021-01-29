@@ -20,7 +20,8 @@ BlockClosureTest >> blockWithNonLocalReturn: resultObject [
 { #category : #running }
 BlockClosureTest >> setUp [
 	super setUp.
-	aBlockContext := [100@100 corner: 200@200].
+	"we reference self to force a full block"
+	aBlockContext := [self . 100@100 corner: 200@200].
 	contextOfaBlockContext := thisContext.
 ]
 
@@ -149,6 +150,21 @@ BlockClosureTest >> testHasMethodReturn [
 	"nested blocks"
 	self assert: [ 1 > 2 ifTrue: [ ^self ] ] hasMethodReturn.
 	self assert: [ #(1) do: [ ^self ] ] hasMethodReturn
+]
+
+{ #category : #'test -testing' }
+BlockClosureTest >> testIsClean [
+	| local |
+	local := #testIsClean.
+	self assert: [] isClean. "closes over nothing at all"
+	self assert: [thisContext] isClean. "we can access the context"
+	self assert: [:a :b| a < b] isClean. "accesses only arguments"
+	self assert: [:a :b| | s | s := a + b. s even] isClean. "accesses only local variables"
+	self deny: [^nil] isClean. "closes over home (^-return)"
+	self deny: [self] isClean. "closes over the receiver"
+	self deny: [super testIsClean] isClean. "closes over the receiver"
+	self deny: [contextOfaBlockContext] isClean. "closes over the receiver (to access the inst var contextOfaBlockContext)"
+	self deny: [local] isClean. "closes over local variable of outer context"
 ]
 
 { #category : #tests }

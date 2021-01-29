@@ -106,10 +106,8 @@ SmallInteger >> / aNumber [
 	No Lookup. See Object documentation whatIsAPrimitive."
 
 	<primitive: 10>
-	aNumber isZero ifTrue: [^(ZeroDivide dividend: self) signal].
-	^(aNumber isMemberOf: SmallInteger)
-		ifTrue: [(Fraction numerator: self denominator: aNumber) reduced]
-		ifFalse: [super / aNumber]
+	aNumber = 0 ifTrue: [^(ZeroDivide dividend: self) signal].
+	^super / aNumber
 ]
 
 { #category : #arithmetic }
@@ -476,6 +474,12 @@ SmallInteger >> identityHash [
 	"Answer a SmallInteger whose value is related to the receiver's identity.
 	 Specific override here to decrease the number of conflicts"
 	^ self hashMultiply
+]
+
+{ #category : #testing }
+SmallInteger >> isImmediateObject [
+	"This is needed for the boostrap"
+	^ true
 ]
 
 { #category : #testing }

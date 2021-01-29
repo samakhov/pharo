@@ -19,7 +19,7 @@ Class {
 DrTestsTestRunnerTest >> setUp [
 	super setUp.
 	package := RPackage organizer
-		packageNamed: 'DrTests-TestCoverage-MocksForTests'.
+		packageNamed: 'DrTests-TestCoverage-Tests-Mocks'.
 	testToReRun := DTCoverageMockTest
 		selector: #testMethod1forMock.
 	testCase := DTCoverageMockTest.
@@ -71,8 +71,8 @@ DrTestsTestRunnerTest >> testRunResultIsDTTestRunnerResult [
 { #category : #tests }
 DrTestsTestRunnerTest >> testSelectedPackagesContainTestCases [
 
-	self assert: (plugin packagesAvailableForAnalysis allSatisfy: [ :package |
-		package definedClasses anySatisfy: [ :class |
+	self assert: (plugin packagesAvailableForAnalysis allSatisfy: [ :pkg |
+		pkg definedClasses anySatisfy: [ :class |
 			class isTestCase ] ])
 ]
 

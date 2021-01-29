@@ -26,8 +26,7 @@ RBEnglobingErrorNode class >> content: aCollection start: aStart stop: aStop err
 		content: aCollection; 
 		start: aStart; 
 		stop: aStop; 
-		errorMessage: message;
-		createValue.
+		errorMessage: message
 ]
 
 { #category : #construction }
@@ -70,13 +69,8 @@ RBEnglobingErrorNode >> content [
 
 { #category : #accessing }
 RBEnglobingErrorNode >> content: aCollection [
-	content := aCollection
-]
-
-{ #category : #initialization }
-RBEnglobingErrorNode >> createValue [
-	self value: (String streamContents: [ :s |
-			content do: [ :each | s nextPutAll: each formattedCode. s nextPutAll: String space. ]])
+	content := aCollection.
+	aCollection do: [:each | each parent: self ]
 ]
 
 { #category : #initialization }

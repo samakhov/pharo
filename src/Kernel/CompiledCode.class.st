@@ -183,12 +183,6 @@ CompiledCode >> comment [
 	^ self ast firstPrecodeComment
 ]
 
-{ #category : #testing }
-CompiledCode >> containsHalt [
-
-	^ self sendsAnySelectorOf: #( halt halt: haltIf: haltIfNil haltOnCount: haltOnce)
-]
-
 { #category : #'source code management' }
 CompiledCode >> definition [
 	"Polymorphic to class definition"
@@ -458,13 +452,17 @@ CompiledCode >> literalAt: index put: value [
 
 { #category : #literals }
 CompiledCode >> literals [
+
 	"Answer an Array of the literals referenced by the receiver.	
 	 Exclude superclass + selector/properties"
+
 	| literals numberLiterals |
-	literals := Array new: (numberLiterals := self numLiterals - self literalsToSkip).
-	1 to: numberLiterals do: [:index |
-		literals at: index put: (self objectAt: index + 1)].
-	^literals
+	literals := Array new:
+		            (numberLiterals := self numLiterals
+		                               - self literalsToSkip).
+	1 to: numberLiterals do: [ :index | 
+	literals at: index put: (self literalAt: index) ].
+	^ literals
 ]
 
 { #category : #literals }
@@ -478,6 +476,22 @@ CompiledCode >> literalsDo: aBlock [
 	"Evaluate aBlock for each of the literals referenced by the receiver."
 	1 to: self numLiterals - self literalsToSkip do:
 		[:index | aBlock value: (self literalAt: index)]
+]
+
+{ #category : #accessing }
+CompiledCode >> literalsEvenTheOnesInTheInnerBlocks [
+
+	| literals numberLiterals |
+	literals := OrderedCollection new:
+		            (numberLiterals := self numLiterals
+		                               - self literalsToSkip).
+	1 to: numberLiterals do: [ :index | 
+		| lit |
+		lit := self literalAt: index.
+		lit isEmbeddedBlock
+			ifTrue: [ literals addAll: lit literalsEvenTheOnesInTheInnerBlocks ]
+			ifFalse: [ literals addLast: lit ] ].
+	^ literals asArray
 ]
 
 { #category : #literals }
@@ -693,24 +707,6 @@ CompiledCode >> readsThisContext [
 	"Answer whether compiledMethod reads thisContext, look into embedded blocks, too"
 	self localReadsThisContext ifTrue: [ ^ true ].
 	^ self innerCompiledBlocksAnySatisfy: [ :cb | cb readsThisContext]
-]
-
-{ #category : #accessing }
-CompiledCode >> referredInstVars [
-	| allInstVarNames instVarNames |
-	allInstVarNames := self methodClass allInstVarNames.
-	self isReturnField ifTrue:
-		[^Set with: (allInstVarNames at: self returnField + 1)].
-	instVarNames := Set new.
-	self abstractBytecodeMessagesDo:
-		[:msg|
-		(#(#popIntoReceiverVariable:
-		    #pushReceiverVariable:
-		    #storeIntoReceiverVariable:) includes: msg selector) ifTrue:
-			[instVarNames add: (allInstVarNames at: msg argument + 1)]].
-	^instVarNames
-
-	"Dictionary fromPairs: (Point selectors collect: [:s| { s. (Point >> s) referredInstVars}])".
 ]
 
 { #category : #testing }

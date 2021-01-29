@@ -37,7 +37,7 @@ Class {
 	#category : #'Refactoring-Core-Refactorings'
 }
 
-{ #category : #'as yet unclassified' }
+{ #category : #cleaning }
 RBRefactoring class >> cleanUp [
 	"RefactoringOptions holds on to blocks, we should make sure to recreate them so the block references the current method"
 	self initializeRefactoringOptions.
@@ -80,7 +80,10 @@ RBRefactoring class >> initializeRefactoringOptions [
 		put: [ :ref :selector |  self error: #useExistingMethod ];
 		
 		at: #openBrowser
-		put: [ :ref :env |  self error: #openBrowser ]
+		put: [ :ref :env |  self error: #openBrowser ];
+		
+		at: #searchInAllHierarchy
+		put: [ self error: #searchInAllHierarchy ]
 ]
 
 { #category : #'accessing signal' }
@@ -155,6 +158,17 @@ RBRefactoring >> classObjectFor: anObject [
 ]
 
 { #category : #support }
+RBRefactoring >> convertAllReferencesTo: aSymbol of: classes using: searchReplacer [ 
+	(self model allReferencesTo: aSymbol in: classes)
+		do: 
+			[:method | 
+			self 
+				convertMethod: method selector
+				for: method modelClass
+				using: searchReplacer]
+]
+
+{ #category : #support }
 RBRefactoring >> convertAllReferencesTo: aSymbol using: searchReplacer [ 
 	self model allReferencesTo: aSymbol
 		do: 
@@ -210,8 +224,10 @@ RBRefactoring >> copyOptionsFrom: aDictionary [
 		ifTrue: [^self options: aDictionary copy].
 	dict keysAndValuesDo: 
 			[:key :value | 
-			value == (self class refactoringOptions at: key) 
-				ifTrue: [dict at: key put: (aDictionary at: key)]].
+			value == (self class refactoringOptions at: key ifAbsent: [nil]) 
+				ifTrue: [ dict at: key put: (aDictionary at: key) ]].
+	(aDictionary keys difference: dict keys) do: 
+		[ :e | dict at: e put: (aDictionary at: e) ].
 	self options: dict
 ]
 
@@ -220,10 +236,17 @@ RBRefactoring >> defaultEnvironment [
 	^RBBrowserEnvironment new
 ]
 
+{ #category : #utilities }
+RBRefactoring >> emptyCondition [
+	^ RBCondition empty
+]
+
 { #category : #transforming }
 RBRefactoring >> execute [
 	self primitiveExecute.
-	RBRefactoryChangeManager instance performChange: self changes; addUndoPointer: 1
+	RBRefactoryChangeManager instance 
+		performChange: self changes; 
+		addUndoPointer: (RBRefactoryChangeManager nextCounter)
 ]
 
 { #category : #transforming }
@@ -293,7 +316,7 @@ RBRefactoring >> parserClass [
 ]
 
 { #category : #transforming }
-RBRefactoring >> performComponentRefactoring: aRefactoring [ 
+RBRefactoring >> performCompositeRefactoring: aRefactoring [ 
 	aRefactoring copyOptionsFrom: self options.
 	aRefactoring primitiveExecute
 ]

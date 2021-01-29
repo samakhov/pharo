@@ -21,6 +21,10 @@ BaselineOfNewTools >> baseline: spec [
 			package: 'NewTools-Core';
 			package: 'NewTools-Morphic';
 			package: 'NewTools-Gtk';
+			"Basic tools (inherited from Spec)"
+			package: 'NewTools-MethodBrowsers';
+			package: 'NewTools-ChangeSorter';
+			package: 'NewTools-KeymapBrowser';
 			"inspector"
 			package: 'NewTools-Inspector' with: [ spec requires: #('NewTools-Inspector-Extensions') ];
 			package: 'NewTools-Inspector-Extensions' with: [ spec requires: #('NewTools-Core') ];
@@ -49,12 +53,14 @@ BaselineOfNewTools >> baseline: spec [
 			package: 'NewTools-ObjectCentricBreakpoints';			
 			"Sindarin"
 			package: 'NewTools-Sindarin-Commands';
+			package: 'NewTools-Sindarin-Commands-Tests' with: [  spec requires: #('NewTools-Sindarin-Commands' 'Sindarin') ];
 			package: 'NewTools-Sindarin-Tools' with: [ spec requires: #('NewTools-Sindarin-Commands' 'Sindarin') ];
 			"package: 'NewTools-Sindarin-ProcessInspector' with: [ spec requires: #('NewTools-Sindarin-Commands' 'Sindarin') ];"
 			"Debugger Selector"
 			package: 'NewTools-DebuggerSelector' with: [ spec requires: #('NewTools-SpTextPresenterDecorators') ];
-			package: 'NewTools-DebuggerSelector-Tests' with: [ spec requires: #('NewTools-DebuggerSelector') ].
-		
+			package: 'NewTools-DebuggerSelector-Tests' with: [ spec requires: #('NewTools-DebuggerSelector') ];
+			package: 'NewTools-Debugger-Fuel'.
+
 		spec
 			group: 'Core' with: #('NewTools-Core' 'NewTools-Morphic');
 			group: 'Playground' with: #('Core' 'NewTools-Playground');
@@ -68,9 +74,15 @@ BaselineOfNewTools >> baseline: spec [
 				'NewTools-ObjectCentricBreakpoints'
 				'NewTools-Sindarin-Tools'
 				'NewTools-Sindarin-Commands'
+				'NewTools-Sindarin-Commands-Tests'
 				'NewTools-Debugger-Breakpoints-Tools'
-				'NewTools-Debugger-Tests');
-			group: 'SystemReporter' with: #('Core' 'NewTools-Inspector');
+				'NewTools-Debugger-Tests'
+				'NewTools-Debugger-Fuel');
+			group: 'SystemReporter' with: #('Core' 'NewTools-SystemReporter');
+			group: 'Methods' with: #('Core' 'NewTools-MethodBrowsers');
+			"Not in the image for the moment, we need a pass on them"
+			group: 'ChangeSorter' with: #('Core' 'NewTools-ChangeSorter');
+			group: 'KeymapBrowser' with: #('Core' 'NewTools-KeymapBrowser');
 			group: 'FlagBrowser' with: #(
 				'Core' 
 				'NewTools-FlagBrowser' 
@@ -86,7 +98,25 @@ BaselineOfNewTools >> baseline: spec [
 				'Playground'
 				'Inspector'
 				'Debugger'
-				'FlagBrowser') ]
+				'Methods'
+				"'ChangeSorter'"
+				"'KeymapBrowser'"
+				"'FlagBrowser'");
+			"A group for running CI"
+			group: 'CI' with: #('Spec2' 'default') ]
+]
+
+{ #category : #dependencies }
+BaselineOfNewTools >> packageRepositoryURL [
+	| url |
+	
+	url := super packageRepositoryURL.
+	url ifEmpty: [ ^ url ].
+	
+	"Verify if I am running in CI"
+	(url includesSubstring: 'pharo-spec') ifTrue: [ ^ '' ].
+	
+	^ url
 ]
 
 { #category : #actions }
@@ -110,4 +140,11 @@ BaselineOfNewTools >> sindarin: spec [
 			repository: (self packageRepositoryURL 
 				ifEmpty: [ 'github://pharo-spec/ScriptableDebugger' ]);
 			loads: 'Core' ]
+]
+
+{ #category : #dependencies }
+BaselineOfNewTools >> spec: spec [ 
+
+	spec baseline: 'Spec2' with: [ 
+		spec repository: 'github://pharo-spec/Spec' ]
 ]

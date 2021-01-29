@@ -1,3 +1,11 @@
+"
+A tool to collect inspection nodes. 
+It acts on an object.
+
+```
+(StNodeCollector for: anObject) collectNodes.
+```
+"
 Class {
 	#name : #StNodeCollector,
 	#superclass : #Object,
@@ -21,11 +29,6 @@ StNodeCollector >> collectNodes [
 	^ 
 	self indexedNodes,	
 	self slotNodes
-]
-
-{ #category : #building }
-StNodeCollector >> collectTempsNodes [
-	^self tempNodesForContext: object context
 ]
 
 { #category : #private }
@@ -83,7 +86,7 @@ StNodeCollector >> slotNodes [
 
 { #category : #building }
 StNodeCollector >> tempNodesForContext: aContext [
-^ aContext astScope allTemps collect: [ :temp |
-(StInspectorTempNode hostObject: aContext) tempVariable: temp]
 
+	^ aContext astScope allTemps collect: [ :temp | 
+		  (StInspectorTempNode hostObject: aContext) tempVariable: temp ]
 ]

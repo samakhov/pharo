@@ -30,18 +30,11 @@ OCAbstractMethodScope >> addCopyingTempToAllScopesUpToDefTemp: aVar [
 ]
 
 { #category : #'temp vars' }
-OCAbstractMethodScope >> addTemp: name [
-	^self addTemp: TemporaryVariable new withName: name
-]
-
-{ #category : #'temp vars' }
-OCAbstractMethodScope >> addTemp: aTempVariable withName: aString [
+OCAbstractMethodScope >> addTemp: aTempVar [	
+	aTempVar scope: self.
 	^ tempVars
-		at: aString
-		put: (aTempVariable
-				name: aString;
-				scope: self;
-				yourself)
+		at: aTempVar name
+		put: aTempVar
 ]
 
 { #category : #'temp vars - vector' }
@@ -83,6 +76,14 @@ OCAbstractMethodScope >> copiedVarNames [
 { #category : #'temp vars - copying' }
 OCAbstractMethodScope >> copiedVars [
 	^ copiedVars
+]
+
+{ #category : #'temp vars - copying' }
+OCAbstractMethodScope >> copyEscapingReads [
+
+	self tempVars values 
+		select: [ :each | each isEscapingRead ]
+		thenDo: [ :each | self addCopyingTemp: each ]
 ]
 
 { #category : #lookup }
@@ -162,6 +163,14 @@ OCAbstractMethodScope >> lookupVarForDeclaration: name [
 OCAbstractMethodScope >> methodScope [
 
 	^ self outerScope methodScope
+]
+
+{ #category : #'temp vars - vector' }
+OCAbstractMethodScope >> moveEscapingWritesToTempVector [
+
+	self tempVars values
+		select: [ :each | each isEscapingWrite ]
+		thenDo: [ :each | self moveToVectorTemp: each ]
 ]
 
 { #category : #'temp vars - vector' }

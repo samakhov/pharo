@@ -150,7 +150,6 @@ BlockClosure >> cull: anArg [
 	"([:x | x + 12] cull: 3)
 	>>> 15
 	"
-	<debuggerCompleteToSender>
 	^numArgs = 0 
 		ifTrue: [self value]
 		ifFalse: [self value: anArg]
@@ -188,6 +187,11 @@ BlockClosure >> cull: firstArg cull: secondArg cull: thirdArg cull: fourthArg [
 		ifTrue: [self cull: firstArg cull: secondArg cull: thirdArg]
 		ifFalse: [self value: firstArg value: secondArg value: thirdArg value: fourthArg]
 	
+]
+
+{ #category : #printing }
+BlockClosure >> doPrintOn: aStream [
+	aStream nextPutAll: self sourceNode sourceCode 
 ]
 
 { #category : #controlling }
@@ -355,23 +359,8 @@ BlockClosure >> isClean [
 	 being created at compile-time."
 	self numCopiedValues > 0 ifTrue:
 		[^false].
-	self abstractBytecodeMessagesDo:
-		[:msg|
-		(#(	pushReceiver
-			pushReceiverVariable: popIntoReceiverVariable: storeIntoReceiverVariable:
-			methodReturnConstant: methodReturnReceiver methodReturnTop)
-				includes: msg selector) ifTrue:
-					[^false]].
-	^true
 
-	"clean:"
-		"[] isClean"
-		"[:a :b| a < b] isClean"
-	"unclean"
-		"[^nil] isClean"
-		"[self class] isClean"
-		"| v | v := 0.
-		 [v class] isClean"
+	^ CleanBlockChecker check: self method
 ]
 
 { #category : #testing }
@@ -563,7 +552,12 @@ BlockClosure >> outerContext: aContext startpc: aStartpc numArgs: argCount copie
 
 { #category : #printing }
 BlockClosure >> printOn: aStream [
-	aStream nextPutAll: self sourceNode sourceCode 
+		
+	[self doPrintOn: aStream] 
+		onErrorDo: [ aStream 
+				nextPutAll: '<Error printing blockClosure in: ';
+				print: self method;
+				nextPutAll: ' >' ]
 ]
 
 { #category : #accessing }

@@ -15,23 +15,29 @@ StDebuggerInspectorModel >> allInspectorNodes [
 ]
 
 { #category : #accessing }
+StDebuggerInspectorModel >> debuggerContextClass [
+	^ StDebuggerContext
+]
+
+{ #category : #accessing }
 StDebuggerInspectorModel >> defaultObjectInspectorClass [
-	^StDebuggerRawObjectInspector
+
+	^ StDebuggerRawObjectInspector
 ]
 
 { #category : #initialize }
 StDebuggerInspectorModel >> initialize [
 	super initialize.
-	inspectedObject := StDebuggerContext new
+	inspectedObject := self debuggerContextClass new
 ]
 
 { #category : #accessing }
 StDebuggerInspectorModel >> inspectedObject [
 
-	^ inspectedObject ifNil: [ inspectedObject := StDebuggerContext new ]
+	^ inspectedObject ifNil: [ inspectedObject := self debuggerContextClass new ]
 ]
 
 { #category : #accessing }
 StDebuggerInspectorModel >> labelString [
-	^ 'Receiver in: ' , super labelString
+	^super labelString capitalized
 ]

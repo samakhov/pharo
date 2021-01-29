@@ -19,7 +19,7 @@ SpMorphicTextInputFieldAdapter >> accept: aText notifying: aNotifyier [
 { #category : #factory }
 SpMorphicTextInputFieldAdapter >> buildWidget [
 	| newWidget |
-	
+
 	newWidget := (RubTextFieldMorph on: self)
 		getTextSelector: #getText;
 		setTextSelector: #accept:notifying:;
@@ -40,8 +40,7 @@ SpMorphicTextInputFieldAdapter >> buildWidget [
 		maxLength: self presenter maxLength;
 		yourself.
 
-	self presenter whenTextChangedDo: [ :text | 
-		newWidget setText: text ].
+	self presenter whenTextChangedDo: [ :text | newWidget setText: text ].
 	self presenter whenSelectionChangedDo: [ :selectionInterval | 
 		self selectionInterval: selectionInterval ].
 	self presenter whenPlaceholderChangedDo: [ :text | 
@@ -75,6 +74,12 @@ SpMorphicTextInputFieldAdapter >> entryCompletion [
 ]
 
 { #category : #private }
+SpMorphicTextInputFieldAdapter >> eventHandlerReceiver: aWidget [
+
+	^ aWidget textArea
+]
+
+{ #category : #private }
 SpMorphicTextInputFieldAdapter >> getPlaceholderText [
 
 	^ self presenter placeholder ifNotNil: [ :aString | 
@@ -89,7 +94,14 @@ SpMorphicTextInputFieldAdapter >> isPassword [
 
 { #category : #accessing }
 SpMorphicTextInputFieldAdapter >> text: aString [
+
 	widget
 		setText: aString;
 		acceptTextInModel
+]
+
+{ #category : #emulating }
+SpMorphicTextInputFieldAdapter >> widgetEventReceiver [
+	
+	^ widget
 ]

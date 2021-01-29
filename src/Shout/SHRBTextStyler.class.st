@@ -1015,7 +1015,6 @@ SHRBTextStyler >> privateStyle: aText [
 		options:  #(+ optionParseErrors + optionSkipSemanticWarnings);
 		requestor: workspace;
 		parse.				
-	ast doSemanticAnalysis.
 	^ self style: aText ast: ast
 ]
 
@@ -1023,7 +1022,7 @@ SHRBTextStyler >> privateStyle: aText [
 SHRBTextStyler >> resolveStyleFor: aVariableNode [
 	aVariableNode binding ifNil: [^#default].
 	aVariableNode isArgumentVariable ifTrue: [ ^#methodArg].
-	aVariableNode isTemp ifTrue: [ ^#tempVar].
+	aVariableNode isTempVariable ifTrue: [ ^#tempVar].
 	aVariableNode isGlobalVariable ifTrue: [ ^#globalVar].
 	"here we should add support for #classVar"
 	aVariableNode isClassVariable ifTrue: [ ^#globalVar].
@@ -1168,6 +1167,13 @@ SHRBTextStyler >> visitBlockNode: aBlockNode [
 SHRBTextStyler >> visitCascadeNode: aCascadeNode [
 	aCascadeNode messages do: [ :each | self visitNode: each ].
 	aCascadeNode semicolons do: [ :pos | self addStyle: #cascadeSeparator from: pos to: pos ]
+]
+
+{ #category : #visiting }
+SHRBTextStyler >> visitEnglobingErrorNode: anEnglobingErrorNode [
+
+	self addStyle: #invalid from: anEnglobingErrorNode stop to: anEnglobingErrorNode stop + 1.
+	anEnglobingErrorNode content do: [:each | self visitNode: each ]
 ]
 
 { #category : #visiting }

@@ -4,16 +4,19 @@ I'm a base adapter for layouts.
 Class {
 	#name : #SpMorphicLayoutAdapter,
 	#superclass : #SpAbstractMorphicAdapter,
+	#instVars : [
+		'layout'
+	],
 	#category : #'Spec2-Adapters-Morphic-Layout'
 }
 
-{ #category : #'as yet unclassified' }
+{ #category : #accessing }
 SpMorphicLayoutAdapter >> adapter [
 	
 	^ nil
 ]
 
-{ #category : #factory }
+{ #category : #accessing }
 SpMorphicLayoutAdapter >> add: aPresenter constraints: constraints [
  
 	aPresenter owner: self model. 
@@ -24,8 +27,8 @@ SpMorphicLayoutAdapter >> add: aPresenter constraints: constraints [
 			to: aPanel ]
 ]
 
-{ #category : #adding }
-SpMorphicLayoutAdapter >> addConstraits: constraints toChild: childMorph [
+{ #category : #private }
+SpMorphicLayoutAdapter >> addConstraints: constraints toChild: childMorph [
 
 	self subclassResponsibility
 ]
@@ -37,12 +40,20 @@ SpMorphicLayoutAdapter >> addKeyBindingsTo: aMorph [
 	
 ]
 
-{ #category : #initialization }
-SpMorphicLayoutAdapter >> applyStyle: aMorph [
-	"layouts do not have style to apply"
+{ #category : #private }
+SpMorphicLayoutAdapter >> applyChildrenAlignmentTo: childMorph constraints: constraints [
+	"When it applies (like the case of SpGridLayout), widgets may want to configure alignment 
+	 here."
+	
+	^ childMorph
 ]
 
-{ #category : #factory }
+{ #category : #styling }
+SpMorphicLayoutAdapter >> applyStyle: aMorph [
+	"lLayouts do not have style to apply"
+]
+
+{ #category : #styling }
 SpMorphicLayoutAdapter >> applyStyle: aPresenter to: aMorph [
 	self flag: #TODO. "This is a HACK, to apply styles just when I'm using new layouts 
 	(otherwise, it interferes on how the old layout is displayed). 
@@ -61,28 +72,34 @@ SpMorphicLayoutAdapter >> basicAdd: aPresenter constraints: constraints to: aPan
 
 { #category : #private }
 SpMorphicLayoutAdapter >> buildMorph: aPresenter constraints: constraints [ 
-	| childMorph |
 
+	| childMorph |
 	childMorph := aPresenter buildWithSpec: constraints spec.
 	self applyStyle: aPresenter to: childMorph.
-	childMorph := self addConstraits: constraints toChild: childMorph.
+	"Add children alignment constraints (if applies)"
+	childMorph := self 
+		applyChildrenAlignmentTo: childMorph 
+		constraints: constraints. 
+	childMorph := self 
+		addConstraints: constraints 
+		toChild: childMorph.
 	
 	^ childMorph
 ]
 
-{ #category : #factory }
+{ #category : #building }
 SpMorphicLayoutAdapter >> buildWidget [
 
 	^ nil
 ]
 
-{ #category : #factory }
+{ #category : #building }
 SpMorphicLayoutAdapter >> buildWithSpec [
 	
 	^ self widget
 ]
 
-{ #category : #factory }
+{ #category : #building }
 SpMorphicLayoutAdapter >> buildWithSpec: aString [ 
 
 	^ self buildWithSpec
@@ -100,7 +117,7 @@ SpMorphicLayoutAdapter >> isEmpty [
 	^ self children isEmpty
 ]
 
-{ #category : #'as yet unclassified' }
+{ #category : #protocol }
 SpMorphicLayoutAdapter >> layout: aLayout [
 
 	"Basic apply visibility to the widget.
@@ -111,23 +128,23 @@ SpMorphicLayoutAdapter >> layout: aLayout [
 { #category : #factory }
 SpMorphicLayoutAdapter >> newPanel [
 
-	^ Morph new 
-		changeTableLayout;
-		hResizing: #spaceFill;
-		vResizing: #spaceFill;
-		color: Color transparent;
-		borderColor: Color transparent;
-		clipSubmorphs: true;
-		beSticky "stop being grabbed";
-		borderWidth: 0;
-		extent: 0@0;
-		yourself
+	^ Morph new
+		  changeTableLayout;
+		  hResizing: #spaceFill;
+		  vResizing: #spaceFill;
+		  color: Color transparent;
+		  borderColor: Color transparent;
+		  clipSubmorphs: true;
+		  "stop being grabbed"beSticky;
+		  borderWidth: 0;
+		  extent: 0 @ 0;
+		  yourself
 ]
 
 { #category : #initialization }
 SpMorphicLayoutAdapter >> replaceLayoutWith: aLayout [ 
-	| oldAdapter |
 
+	| oldAdapter |
 	self widget owner ifNil: [ ^ self ].
 
 	oldAdapter := self.

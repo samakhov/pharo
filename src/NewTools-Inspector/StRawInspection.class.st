@@ -31,6 +31,24 @@ StRawInspection class >> defaultSpec [
 		yourself
 ]
 
+{ #category : #accessing }
+StRawInspection class >> label [
+
+	^ 'Raw'
+]
+
+{ #category : #api }
+StRawInspection >> activateOnDoubleClick [
+
+	attributeTable activateOnDoubleClick
+]
+
+{ #category : #api }
+StRawInspection >> activateOnSingleClick [
+
+	attributeTable activateOnSingleClick
+]
+
 { #category : #building }
 StRawInspection >> addValuesColumn [
 
@@ -66,7 +84,6 @@ StRawInspection >> initialize [
 StRawInspection >> initializePresenters [
 
 	attributeTable := self newTreeTable
-		activateOnSingleClick;
 		beResizable;
 		contextMenu: [ self rootCommandsGroup asMenuPresenter ];
 		yourself.
@@ -143,7 +160,7 @@ StRawInspection >> setAttributeTable [
 
 { #category : #stepping }
 StRawInspection >> step [
-	| rootNodes selectedPath |
+	| rootNodes |
 
 	rootNodes := self model allInspectorNodes.
 	mementoNodes ifNil: [ 
@@ -152,10 +169,7 @@ StRawInspection >> step [
 	(rootNodes collect: #value) = mementoNodes ifTrue: [ ^ self ].
 
 	mementoNodes := rootNodes collect: #mementoValue.
-	selectedPath := attributeTable selection selectedPath.
-	attributeTable roots: rootNodes.
-	selectedPath ifNotNil: [ 
-		attributeTable selectPath: selectedPath ]
+	attributeTable updateRootsKeepingSelection: rootNodes
 ]
 
 { #category : #building }

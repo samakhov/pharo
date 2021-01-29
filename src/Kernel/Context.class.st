@@ -27,7 +27,6 @@ Class {
 	],
 	#classVars : [
 		'PrimitiveFailToken',
-		'QuickStep',
 		'SpecialPrimitiveSimulators',
 		'TryNamedPrimitiveTemplateMethod'
 	],
@@ -91,7 +90,15 @@ Context class >> contextEnsure: block [
 
 	| ctxt chain |
 	ctxt := thisContext.
-	[chain := thisContext sender cut: ctxt. ctxt jump] ensure: block.
+	[chain := thisContext sender cut: ctxt. 
+		
+		"As the jump will return to the current context inside the context ensure:
+		It is needed to emulate the return value of sending the message ensure:
+		If this is not done, the context will do an additional pop, affecting the temporary variables. 
+		This is required because we are breaking a condition on Context >> jump.
+		The receiver of jump should be a Top context, in this case it is not. "
+		ctxt push: nil. 
+		ctxt jump] ensure: block.
 	"jump above will resume here without unwinding chain"
 	^ chain
 ]
@@ -102,7 +109,15 @@ Context class >> contextOn: exceptionClass do: block [
 
 	| ctxt chain |
 	ctxt := thisContext.
-	[chain := thisContext sender cut: ctxt. ctxt jump] on: exceptionClass do: block.
+	[chain := thisContext sender cut: ctxt. 
+	
+		"As the jump will return to the current context inside the context on:do:
+		It is needed to emulate the return value of sending the message on:do:
+		If this is not done, the context will do an additional pop, affecting the temporary variables. 
+		This is required because we are breaking a condition on Context >> jump.
+		The receiver of jump should be a Top context, in this case it is not. "
+		ctxt push:nil. 
+		ctxt jump] on: exceptionClass do: block.
 	"jump above will resume here without unwinding chain"
 	^ chain
 ]
@@ -113,8 +128,7 @@ Context class >> initialize [
 	"A unique object to be returned when a primitive fails during simulation"
 	PrimitiveFailToken := Object new.
 	self initializeTryNamedPrimitiveTemplateMethod.
-	SpecialPrimitiveSimulators := nil.
-	QuickStep := nil.
+	SpecialPrimitiveSimulators := nil
 ]
 
 { #category : #simulation }
@@ -485,6 +499,7 @@ Context >> copyTo: aContext [
 
 	| copy |
 	self == aContext ifTrue: [^ nil].
+	self pc. "this is a workaround, see https://github.com/pharo-project/pharo/issues/2949"
 	copy := self copy.
 	self sender ifNotNil: [
 		copy privSender: (self sender copyTo: aContext)].
@@ -535,6 +550,22 @@ Context >> depthBelow: aContext [
 			context := context sender.
 			depth := depth + 1 ].
 	^ depth
+]
+
+{ #category : #'instruction decoding' }
+Context >> directedSuperSend: selector numArgs: numArgs [ 
+	
+	| lookupClass arguments currentReceiver |
+
+	lookupClass := self pop superclass.
+	
+	arguments := Array new: numArgs.
+	numArgs to: 1 by: -1 do: [ :i | 
+		arguments at: i put: self pop ].
+
+	currentReceiver := self pop.
+	
+	^ self send: selector to: currentReceiver with: arguments lookupIn: lookupClass
 ]
 
 { #category : #'instruction decoding' }
@@ -988,7 +1019,9 @@ Context >> isUnwindContext [
 { #category : #controlling }
 Context >> jump [
 	"Abandon thisContext and resume self instead (using the same current process).  You may want to save thisContext's sender before calling this so you can jump back to it.
-	Self MUST BE a top context (ie. a suspended context or a abandoned context that was jumped out of).  A top context already has its return value on its stack (see Interpreter>>primitiveSuspend and other suspending primitives).
+	Self MUST BE a top context (ie. a suspended context or an abandoned context that was jumped out of).  A top context already has its return value on its stack (see Interpreter>>primitiveSuspend and other suspending primitives).
+	If self is not a top context is the responsibility of the caller to push something in the context. If this is not guarantee an error when accessing the values in the context is produced. Pay special attention to the implementation of Context class >> #contextOn: exceptionClass do: block and Context class >> #contextEnsure:. 
+	
 	thisContext's sender is converted to a top context (by pushing a nil return value on its stack) so it can be jump back to."
 
 	| top |
@@ -1343,11 +1376,22 @@ Context >> printDetails: stream [
 
 { #category : #printing }
 Context >> printOn: aStream [
+	(closureOrNil isNotNil and: [closureOrNil isClean]) ifTrue: 
+		[ | selector |
+			selector := self selector ifNil: [ self compiledCode defaultSelector ].
+			aStream 
+			 print: closureOrNil;
+			 nextPutAll: ' in ';
+			 nextPutAll: self methodClass name;
+			 nextPutAll: '>>';
+			 nextPutAll: selector.
+			 ^self].
+	
 	self outerContext
 		ifNil:
 			[ | selector class mclass |
-			self compiledCode == nil
-				ifTrue: [ ^ super printOn: aStream ].
+			self compiledCode
+				ifNil: [ ^ super printOn: aStream ].
 			class := self receiver class.
 			mclass := self methodClass.
 			selector := self selector ifNil: [ self compiledCode defaultSelector ].
@@ -1365,7 +1409,8 @@ Context >> printOn: aStream [
 					(self tempAt: 1) selector printOn: aStream ] ]
 		ifNotNil:
 			[ :outerContext | 
-			aStream nextPutAll: closureOrNil printString , ' in '.
+			closureOrNil printOn: aStream.
+			aStream nextPutAll: ' in '.
 			outerContext printOn: aStream ]
 ]
 

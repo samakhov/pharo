@@ -10,6 +10,13 @@ Class {
 	#category : #'Debugger-Model-Tests-Core'
 }
 
+{ #category : #accessing }
+DynamicMessageImplementorTest >> instVar [
+	"Only required so that instVar is referenced as we do not want unreferenced ivars in the image"
+	
+	^ instVar
+]
+
 { #category : #testing }
 DynamicMessageImplementorTest >> testBinaryMessage [
 
@@ -28,6 +35,26 @@ DynamicMessageImplementorTest >> testConflictingArgumentNames [
 	messageImplementor := DynamicMessageImplementor for: (Message selector: #m1:m2:m3: arguments: #(1 2 3)) in: self class.	
 	sourceCode := messageImplementor value.	
 	self assert: sourceCode withSeparatorsCompacted equals: 'm1: anInteger m2: anInteger2 m3: anInteger3 self shouldBeImplemented.' withSeparatorsCompacted
+]
+
+{ #category : #testing }
+DynamicMessageImplementorTest >> testGenerateBooleanArgumentNameForFalse [
+
+	| messageImplementor sourceCode |		
+	
+	messageImplementor := DynamicMessageImplementor for: (Message selector: #iReceiveABoolean: arguments: #(false)) in: self class.
+	sourceCode := messageImplementor value.
+	self assert: sourceCode withSeparatorsCompacted equals: 'iReceiveABoolean: aBoolean self shouldBeImplemented.' withSeparatorsCompacted
+]
+
+{ #category : #testing }
+DynamicMessageImplementorTest >> testGenerateBooleanArgumentNameForTrue [
+
+	| messageImplementor sourceCode |		
+	
+	messageImplementor := DynamicMessageImplementor for: (Message selector: #iReceiveABoolean: arguments: #(true)) in: self class.
+	sourceCode := messageImplementor value.
+	self assert: sourceCode withSeparatorsCompacted equals: 'iReceiveABoolean: aBoolean self shouldBeImplemented.' withSeparatorsCompacted
 ]
 
 { #category : #testing }

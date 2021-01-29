@@ -1,33 +1,18 @@
 "
-A TreeTablePresenter handles a tree table.
-Tables defines columns (see #addColumn: and TableColumn hierarchy).
-Tables receive items (see #items:) to feed the table.
+A presenter for tree with a table.
+A table has columns with a type (See column types section).
 
-self example
+**IMPORTANT:** A table presenter does not contain other presenters. Instead, it maps the model provided (See `SpTreeTablePresenter>>#roots:` and `SpTreeTablePresenter>>#children:`) with the columns defined. If you need this behavior, you will need to use `SpComponentListPresenter`.
 
-@@TODO
-
-!! Transmissions
-- #inputRootsPort (default)
-- #outputSelectionPort (default)
-- #outputActivationPort
 "
 Class {
 	#name : #SpTreeTablePresenter,
-	#superclass : #SpAbstractWidgetPresenter,
-	#traits : 'SpTHaveWrappingScrollBars + SpTContextMenu + SpTSearchable',
-	#classTraits : 'SpTHaveWrappingScrollBars classTrait + SpTContextMenu classTrait + SpTSearchable classTrait',
+	#superclass : #SpAbstractTreePresenter,
 	#instVars : [
 		'#columns => SpObservableSlot',
 		'#showColumnHeaders => SpObservableSlot',
 		'#isResizable => SpObservableSlot',
-		'#roots => SpObservableSlot',
-		'#selectionMode',
-		'#childrenBlock',
-		'#activationBlock',
-		'#activateOnSingleClick',
-		'#lazilyComputeChildren',
-		'#verticalAlignment'
+		'#lazilyComputeChildren'
 	],
 	#category : #'Spec2-Core-Widgets-Tree'
 }
@@ -38,116 +23,75 @@ SpTreeTablePresenter class >> adapterName [
 	^ #TreeTableAdapter
 ]
 
-{ #category : #api }
-SpTreeTablePresenter >> activateOnDoubleClick [
-	
-	activateOnSingleClick := false
+{ #category : #documentation }
+SpTreeTablePresenter class >> addDocumentExtraSections: aBuilder [
+
+	aBuilder newLine.
+	aBuilder header: [ :builder | builder text: 'Column types' ] withLevel: 2.
+	aBuilder unorderedListDuring: [ 
+		(SpTableColumn allSubclasses sorted: #name ascending) do: [ :eachType | 
+			aBuilder item: [
+				aBuilder monospace: eachType name ] ] ]
 ]
 
-{ #category : #api }
-SpTreeTablePresenter >> activateOnSingleClick [
-	
-	activateOnSingleClick := true
+{ #category : #documentation }
+SpTreeTablePresenter class >> documentFactoryMethodSelector [
+
+	^ #newTreeTable
 ]
 
-{ #category : #testing }
-SpTreeTablePresenter >> activatesOnDoubleClick [
-	
-	^ activateOnSingleClick not
-]
-
-{ #category : #testing }
-SpTreeTablePresenter >> activatesOnSingleClick [
-	
-	^ activateOnSingleClick
+{ #category : #documentation }
+SpTreeTablePresenter class >> documentSections [
+		
+	^ OrderedDictionary newFromPairs: {
+		'Examples'. self class methods select: [ :each | each protocol = self documentExamplesProtocol ].
+		'API Methods'. self methods select: [ :each | each protocol = #'api' ].
+		'API Selection Methods'. self methods select: [ :each | each protocol = #'api-selection' ].
+		'Testing Methods'. self methods select: [ :each | each protocol = #'testing' ].
+		'Events'. self methods select: [ :each | each protocol = #'api-events' ].
+	 }
 ]
 
 { #category : #api }
 SpTreeTablePresenter >> addColumn: aColumn [
+	"Add a column to the table. A column should be an instance of `SpTableColumn`"
+
 	columns := self columns copyWith: aColumn
 ]
 
 { #category : #api }
-SpTreeTablePresenter >> beMultipleSelection [
-
-	self selectionMode: (SpTreeMultipleSelectionMode on: self)
-]
-
-{ #category : #api }
 SpTreeTablePresenter >> beNotResizable [
+	"Mark the table as 'not resizable', which means there will be not possibility to resize the 
+	 columns of it."
+
 	self isResizable: false
 ]
 
 { #category : #api }
 SpTreeTablePresenter >> beResizable [
+	"Mark the table as 'resizable', which means there will be a slider to resize the columns."
+
 	self isResizable: true
 ]
 
 { #category : #api }
-SpTreeTablePresenter >> beSingleSelection [
-	
-	self selectionMode: (SpTreeSingleSelectionMode on: self)
-]
-
-{ #category : #private }
-SpTreeTablePresenter >> children [
-
-	^ childrenBlock
-]
-
-{ #category : #accessing }
-SpTreeTablePresenter >> children: aBlock [
-
-	childrenBlock := aBlock
-]
-
-{ #category : #accessing }
-SpTreeTablePresenter >> childrenFor: anObject [ 
-
-	^ self children value: anObject
-]
-
-{ #category : #simulation }
-SpTreeTablePresenter >> clickAtPath: aPath [
-
-	self selectPath: aPath.
-
-	activateOnSingleClick ifFalse: [ ^ self ].
-	self doActivateAtPath: aPath
-]
-
-{ #category : #accessing }
 SpTreeTablePresenter >> columns [
+	"Answer the columns composing this table."
+
 	^ columns
 ]
 
 { #category : #api }
 SpTreeTablePresenter >> columns: aCollection [
+	"Set all columns at once. 
+	 `aCollection` is a list of instances of `SpTableColumn`"
+
 	columns := aCollection
-]
-
-{ #category : #simulation }
-SpTreeTablePresenter >> doActivateAtPath: aPath [
-	"Activate only if there is an item at that position"
-
-	self itemAtPath: aPath ifAbsent: [ ^ self ].
-	activationBlock
-		cull:
-			((SpTreeSingleSelectionMode on: self)
-				selectPath: aPath;
-				yourself)
-]
-
-{ #category : #simulation }
-SpTreeTablePresenter >> doubleClickAtPath: aPath [
-	self selectPath: aPath.
-	
-	activateOnSingleClick ifTrue: [ ^ self ].
-	self doActivateAtPath: aPath
 ]
 
 { #category : #api }
 SpTreeTablePresenter >> hideColumnHeaders [
+	"Hide the column headers"
 
 	showColumnHeaders := false
 ]
@@ -155,7 +99,6 @@ SpTreeTablePresenter >> hideColumnHeaders [
 { #category : #initialization }
 SpTreeTablePresenter >> initialize [
 	super initialize.
-	self initializeTSearchable.
 
 	self withScrollBars.
 	
@@ -177,6 +120,8 @@ SpTreeTablePresenter >> initialize [
 
 { #category : #testing }
 SpTreeTablePresenter >> isResizable [
+	"Answer true if table allows resizing of its columns."
+
 	^ isResizable
 ]
 
@@ -187,227 +132,63 @@ SpTreeTablePresenter >> isResizable: aBoolean [
 
 { #category : #testing }
 SpTreeTablePresenter >> isShowingColumnHeaders [
+	"Answer true if the table is configured to show column headers."
 
 	^ showColumnHeaders
 ]
 
 { #category : #private }
-SpTreeTablePresenter >> itemAt: index of: anArray then: path [
-	"dives into elements of tree to find the one that corresponds to path"
-	| element |
-	
-	element := anArray at: index.
-	^ path 
-		ifNotEmpty: [ 
-			self 
-				itemAt: path first 
-				of: (self childrenFor: element) 
-				then: path allButFirst ]
-		ifEmpty: [ 
-			element ]
-]
-
-{ #category : #accessing }
-SpTreeTablePresenter >> itemAtPath: anArray [
-
-	^ self 
-		itemAt: anArray first
-		of: self roots
-		then: anArray allButFirst
-]
-
-{ #category : #accessing }
-SpTreeTablePresenter >> itemAtPath: anArray ifAbsent: aBlock [
-	^ [ self itemAtPath: anArray ]
-		on: SubscriptOutOfBounds
-		do: [ aBlock value ]
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> items: aCollection [
-	"Set the roots of a tree. This is a convenience method, synonym of `SpTreeTablePresenter>>#roots:`"
-
-	self roots: aCollection
-]
-
-{ #category : #api }
 SpTreeTablePresenter >> lazilyComputeChildren [
 	"When we compute lazily the children, we will show in all cases the expand arrow even if there is no children until we open this children."
 
 	lazilyComputeChildren := true
 ]
 
-{ #category : #accessing }
+{ #category : #private }
 SpTreeTablePresenter >> lazilyComputeChildren: aBoolean [
 	lazilyComputeChildren := aBoolean
 ]
 
-{ #category : #initialization }
-SpTreeTablePresenter >> registerEvents [
-
-	self whenMenuChangedDo: [ 
-		self withAdapterDo: [ :anAdapter | anAdapter updateMenu ] ]
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> roots [
-
-	^ roots
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> roots: aCollection [
-
-	roots := aCollection.
-	self selection clearSelection
-]
-
 { #category : #private }
-SpTreeTablePresenter >> searchValueOf: item [ 
-
-	^ item asString
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> selectItem: anItem [
-
-	self selection selectItem: anItem
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> selectItems: aListOfItem [
-
-	self selection selectItems: aListOfItem
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> selectPath: aPath [
-
-	self selection selectPath: aPath
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> selectPath: aPath scrollToSelection: shouldScrollToSelection [
-
-	self selectPath: aPath.
-	shouldScrollToSelection ifTrue: [ adapter scrollToSelection ]
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> selectPaths: pathArray [
-	self selection selectPaths: pathArray
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> selectedItem [
-	
-	^ self selection selectedItem
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> selectedItems [
-	
-	^ self selection selectedItems
-]
-
-{ #category : #accessing }
-SpTreeTablePresenter >> selection [
-	
-	^ selectionMode value
-]
-
-{ #category : #private }
-SpTreeTablePresenter >> selectionMode: aMode [
-	
-	selectionMode ifNotNil: [ 
-		selectionMode transferSubscriptionsTo: aMode ].
-	selectionMode := aMode
-]
-
-{ #category : #testing }
 SpTreeTablePresenter >> shouldLazilyComputeChildren [
 	^ lazilyComputeChildren
 ]
 
 { #category : #api }
 SpTreeTablePresenter >> showColumnHeaders [
+	"Show column headers"
 
 	showColumnHeaders := true
 ]
 
-{ #category : #api }
-SpTreeTablePresenter >> unselectAll [ 
-
-	self selection unselectAll
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> unselectItem: anItem [
-
-	self selection unselectItem: anItem
-]
-
-{ #category : #api }
-SpTreeTablePresenter >> unselectPath: aPath [
-
-	self selection unselectPath: aPath
-]
-
-{ #category : #accessing }
-SpTreeTablePresenter >> verticalAlignment [
-	^ verticalAlignment
-]
-
 { #category : #'api-events' }
-SpTreeTablePresenter >> whenActivatedDo: aBlock [
+SpTreeTablePresenter >> whenColumnsChangedDo: aBlock [
+	"Inform when columns have changed. 
+	 `aBlock` has three optional arguments: 
+	 - new value
+	 - old value
+	 - the announcement triggering this action"	
+	
 
-	activationBlock := aBlock
-]
-
-{ #category : #'api-events' }
-SpTreeTablePresenter >> whenColumnsChangedDo: aBlockClosure [
-	self property: #columns whenChangedDo: aBlockClosure
+	self property: #columns whenChangedDo: aBlock
 ]
 
 { #category : #'api-events' }
 SpTreeTablePresenter >> whenIsResizableChangedDo: aBlock [
+	"Inform when resizable property has changed. 
+	 `aBlock` has three optional arguments: 
+	 - new value
+	 - old value
+	 - the announcement triggering this action"
 
 	self property: #isResizable whenChangedDo: aBlock
 ]
 
-{ #category : #accessing }
-SpTreeTablePresenter >> whenMultiSelectionChangedDo: aBlockClosure [ 
-	
-	selectionMode whenChangedDo: aBlockClosure 
-]
-
-{ #category : #'api-events' }
-SpTreeTablePresenter >> whenRootsChangedDo: aBlockClosure [ 
-
-	self property: #roots whenChangedDo: aBlockClosure
-]
-
-{ #category : #'api-events' }
-SpTreeTablePresenter >> whenSelectedIndexChangedDo: aBlockClosure [ 
-	
-	self whenSelectionChangedDo: [ :selection | aBlockClosure cull: selection first ]
-]
-
 { #category : #'api-events' }
 SpTreeTablePresenter >> whenSelectedItemChangedDo: aBlock [
+	"Inform when selected index has changed. 
+	 `aBlock` receives one optional argument (the new element)."
 	
 	self whenSelectionChangedDo: [ :selection | 
 		aBlock cull: (selection ifNotNil: [ :anArray | anArray second ]) ]
-]
-
-{ #category : #'api-events' }
-SpTreeTablePresenter >> whenSelectionChangedDo: aBlock [ 
-	
-	self selection whenChangedDo: [ aBlock cull: selectionMode ]
-]
-
-{ #category : #'api-events' }
-SpTreeTablePresenter >> whenShowColumnHeadersChangedDo: aBlockClosure [ 
-	
-	self property: #showColumnHeaders whenChangedDo: aBlockClosure 
 ]

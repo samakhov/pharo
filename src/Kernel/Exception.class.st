@@ -101,9 +101,9 @@ Exception class >> signalIn: context [
 Exception >> completeProcess: aProcess with: aContext [
 	"I am a hook during process completion in case one of my subclass wants to plug a special behavior.
 	
-	By default I return my signaler context"
+	By default I return my signal context"
 
-	^ self signalerContext
+	^ self signalContext
 ]
 
 { #category : #handling }
@@ -126,6 +126,16 @@ Exception >> defaultAction [
 	self raiseUnhandledError
 ]
 
+{ #category : #default }
+Exception >> defaultDescription [
+	"Return a textual description of the exception."
+
+	^ String streamContents: [ :stream | | mt |
+		stream << self class name.
+		(mt := self messageText) isEmptyOrNil
+			ifFalse: [ stream << ': ' << mt ] ]
+]
+
 { #category : #private }
 Exception >> defaultResumeValue [
 	"Answer the value that by default should be returned if the exception is resumed"
@@ -142,12 +152,12 @@ Exception >> defaultReturnValue [
 
 { #category : #accessing }
 Exception >> description [
-	"Return a textual description of the exception."
 
-	^ String streamContents: [ :stream | | mt |
-		stream << self class name.
-		(mt := self messageText) isEmptyOrNil
-			ifFalse: [ stream << ': ' << mt ] ]
+	"Returns a textual description of the exception."
+
+	"Must be overriden to return a specialized description "
+
+	^ self defaultDescription
 ]
 
 { #category : #handling }
@@ -369,11 +379,6 @@ Exception >> signalerContext [
 	^ signalContext findContextSuchThat: [ :context |
 		(context receiver == self 
 		or: [ context receiver == self class ]) not ]
-]
-
-{ #category : #accessing }
-Exception >> smartDescription [
-	^self description
 ]
 
 { #category : #accessing }

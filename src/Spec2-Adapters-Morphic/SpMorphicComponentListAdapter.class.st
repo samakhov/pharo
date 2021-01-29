@@ -41,7 +41,7 @@ SpMorphicComponentListAdapter >> children [
 		cell submorphs first ]
 ]
 
-{ #category : #'as yet unclassified' }
+{ #category : #accessing }
 SpMorphicComponentListAdapter >> elementAt: index [ 
 	
 	^ self widget dataSource elementAt: index
@@ -78,21 +78,6 @@ SpMorphicComponentListAdapter >> refreshWidgetSelection [
 		ifTrue: [ self widget basicSelectIndexes: #() ]
 		ifFalse: [ self widget basicSelectIndexes: rowIndexes ].
 	self refreshList
-]
-
-{ #category : #emulating }
-SpMorphicComponentListAdapter >> rightClicked [
-	| evt |
-
-	evt := MouseButtonEvent new 
-		setType: nil 
-		position: widget center 
-		which: MouseButtonEvent yellowButton 
-		buttons: MouseButtonEvent yellowButton 
-		hand: nil 
-		stamp: nil.
-	
-	self widget click: evt
 ]
 
 { #category : #accessing }
@@ -133,6 +118,21 @@ SpMorphicComponentListAdapter >> selectionChanged: ann [
 	
 	ann newSelectedIndexes ifNotEmpty: [ ^ self ].
 	self presenter selection unselectAll
+]
+
+{ #category : #emulating }
+SpMorphicComponentListAdapter >> sendRightClickEvent [
+	| evt |
+
+	evt := MouseButtonEvent new 
+		setType: nil 
+		position: widget center 
+		which: MouseButtonEvent yellowButton 
+		buttons: MouseButtonEvent yellowButton 
+		hand: nil 
+		stamp: nil.
+	
+	self widget click: evt
 ]
 
 { #category : #private }
